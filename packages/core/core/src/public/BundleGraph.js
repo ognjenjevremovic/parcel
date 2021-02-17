@@ -90,21 +90,33 @@ export default class BundleGraph<TBundle: IBundle>
       .map(dep => new Dependency(dep));
   }
 
+  getAssetWithDependency(dep: IDependency): ?IAsset {
+    let asset = this.#graph.getAssetWithDependency(
+      dependencyToInternalDependency(dep),
+    );
+    if (asset) {
+      return assetFromValue(asset, this.#options);
+    }
+  }
+
   getBundleGroupsContainingBundle(bundle: IBundle): Array<BundleGroup> {
     return this.#graph.getBundleGroupsContainingBundle(
       bundleToInternalBundle(bundle),
     );
   }
 
-  getSiblingBundles(bundle: IBundle): Array<TBundle> {
+  getReferencedBundles(
+    bundle: IBundle,
+    opts?: {|recursive: boolean|},
+  ): Array<TBundle> {
     return this.#graph
-      .getSiblingBundles(bundleToInternalBundle(bundle))
+      .getReferencedBundles(bundleToInternalBundle(bundle), opts)
       .map(bundle =>
         this.#createBundle.call(null, bundle, this.#graph, this.#options),
       );
   }
 
-  getReferencedBundles(bundle: IBundle): Array<TBundle> {
+  getRequiredBundlesForBundle(bundle: IBundle): Array<TBundle> {
     return this.#graph
       .getReferencedBundles(bundleToInternalBundle(bundle))
       .map(bundle =>
@@ -173,10 +185,6 @@ export default class BundleGraph<TBundle: IBundle>
     return null;
   }
 
-  isAssetReferenced(asset: IAsset): boolean {
-    return this.#graph.isAssetReferenced(assetToAssetValue(asset));
-  }
-
   isAssetReferencedByDependant(bundle: IBundle, asset: IAsset): boolean {
     return this.#graph.isAssetReferencedByDependant(
       bundleToInternalBundle(bundle),
@@ -205,6 +213,10 @@ export default class BundleGraph<TBundle: IBundle>
       .map(bundle =>
         this.#createBundle.call(null, bundle, this.#graph, this.#options),
       );
+  }
+
+  isEntryBundleGroup(bundleGroup: BundleGroup): boolean {
+    return this.#graph.isEntryBundleGroup(bundleGroup);
   }
 
   getChildBundles(bundle: IBundle): Array<TBundle> {
@@ -244,21 +256,18 @@ export default class BundleGraph<TBundle: IBundle>
   getExportedSymbols(
     asset: IAsset,
     boundary: ?IBundle,
-  ): ?Array<ExportSymbolResolution> {
+  ): Array<ExportSymbolResolution> {
     let res = this.#graph.getExportedSymbols(
       assetToAssetValue(asset),
       boundary ? bundleToInternalBundle(boundary) : null,
     );
-    return (
-      res &&
-      res.map(e => ({
-        asset: assetFromValue(e.asset, this.#options),
-        exportSymbol: e.exportSymbol,
-        symbol: e.symbol,
-        loc: e.loc,
-        exportAs: e.exportAs,
-      }))
-    );
+    return res.map(e => ({
+      asset: assetFromValue(e.asset, this.#options),
+      exportSymbol: e.exportSymbol,
+      symbol: e.symbol,
+      loc: e.loc,
+      exportAs: e.exportAs,
+    }));
   }
 
   traverseBundles<TContext>(

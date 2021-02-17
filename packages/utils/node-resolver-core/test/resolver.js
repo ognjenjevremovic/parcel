@@ -52,6 +52,14 @@ describe('resolver', function() {
       path.join(rootDir, 'packages/source-alias-glob'),
       path.join(rootDir, 'node_modules/source-alias-glob'),
     );
+    await outputFS.symlink(
+      path.join(rootDir, 'bar.js'),
+      path.join(rootDir, 'baz.js'),
+    );
+    await outputFS.symlink(
+      path.join(rootDir, 'nested'),
+      path.join(rootDir, 'symlinked-nested'),
+    );
 
     resolver = new NodeResolver({
       fs: overlayFS,
@@ -147,6 +155,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: require.resolve('browserify-zlib'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: require.resolve('browserify-zlib'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          require.resolve('browserify-zlib/package.json'),
+        ],
       });
     });
 
@@ -160,6 +186,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(__dirname, '..', 'src', '_empty.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(__dirname, '..', 'src', '_empty.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(__dirname, '..', 'package.json'),
+        ],
       });
     });
 
@@ -185,6 +229,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'foo', 'index.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/foo',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'foo', 'package.json'),
+        ],
       });
     });
 
@@ -198,6 +260,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'package-main', 'main.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-main',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-main', 'package.json'),
+        ],
       });
     });
 
@@ -216,6 +296,24 @@ describe('resolver', function() {
           'module.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-module',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-module', 'package.json'),
+        ],
       });
     });
 
@@ -234,6 +332,24 @@ describe('resolver', function() {
           'browser.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-browser',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-browser', 'package.json'),
+        ],
       });
     });
 
@@ -252,6 +368,24 @@ describe('resolver', function() {
           'main.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-browser',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-browser', 'package.json'),
+        ],
       });
     });
 
@@ -270,6 +404,61 @@ describe('resolver', function() {
           'index.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-fallback',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            filePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-fallback',
+              'main.js',
+            ),
+          },
+          {
+            filePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-fallback',
+              'main.js.js',
+            ),
+          },
+          {
+            filePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-fallback',
+              'main.js.json',
+            ),
+          },
+          {
+            filePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-fallback',
+              'main.js/package.json',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-fallback',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -289,6 +478,54 @@ describe('resolver', function() {
           'index.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-main-directory',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            filePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-main-directory',
+              'nested.js',
+            ),
+          },
+          {
+            filePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-main-directory',
+              'nested.json',
+            ),
+          },
+          {
+            filePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-main-directory',
+              'nested',
+              'package.json',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-main-directory',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -302,6 +539,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'foo', 'nested', 'baz.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/foo',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'foo', 'package.json'),
+        ],
       });
     });
 
@@ -315,6 +570,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.resolve(rootDir, 'node_modules/@scope/pkg/index.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/@scope/pkg',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', '@scope', 'pkg', 'package.json'),
+        ],
       });
     });
 
@@ -328,6 +601,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.resolve(rootDir, 'node_modules/@scope/pkg/foo/bar.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/@scope/pkg',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', '@scope', 'pkg', 'package.json'),
+        ],
       });
     });
   });
@@ -348,6 +639,29 @@ describe('resolver', function() {
           'browser.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-browser-alias',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-browser-alias',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -366,6 +680,29 @@ describe('resolver', function() {
           'bar.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-browser-alias',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-browser-alias',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -389,6 +726,39 @@ describe('resolver', function() {
           'bar.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-browser-alias',
+              'browser.js',
+            ),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-browser-alias',
+              'bar',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-browser-alias',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -407,6 +777,29 @@ describe('resolver', function() {
           'foo.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-browser-alias',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-browser-alias',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -430,6 +823,39 @@ describe('resolver', function() {
           'subfolder1/subfolder2/subfile.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-browser-alias',
+              'browser.js',
+            ),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-browser-alias',
+              'nested',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-browser-alias',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -443,6 +869,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'package-alias', 'bar.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-alias',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-alias', 'package.json'),
+        ],
       });
     });
 
@@ -461,6 +905,34 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'package-alias', 'bar.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'browser.js',
+            ),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'bar',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-alias', 'package.json'),
+        ],
       });
     });
 
@@ -485,6 +957,40 @@ describe('resolver', function() {
           'test.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias-glob',
+              'index.js',
+            ),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias-glob',
+              'src',
+              'test',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-alias-glob',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -498,6 +1004,24 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'foo', 'index.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/foo',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'foo', 'package.json'),
+        ],
       });
     });
 
@@ -511,6 +1035,35 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'foo', 'index.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'foo.js',
+            ),
+          },
+          {
+            fileName: 'node_modules/foo',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'foo.js',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-alias', 'package.json'),
+          path.join(rootDir, 'node_modules', 'foo', 'package.json'),
+        ],
       });
     });
 
@@ -524,6 +1077,35 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'node_modules', 'foo', 'bar.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'foo.js',
+            ),
+          },
+          {
+            fileName: 'node_modules/foo',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'foo.js',
+            ),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-alias', 'package.json'),
+          path.join(rootDir, 'node_modules', 'foo', 'package.json'),
+        ],
       });
     });
 
@@ -537,6 +1119,21 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'bar.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'bar.js'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -550,6 +1147,29 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'bar.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'foo.js',
+            ),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'bar.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-alias', 'package.json'),
+        ],
       });
     });
 
@@ -563,6 +1183,21 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'nested', 'test.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'nested', 'test.js'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -576,6 +1211,30 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'nested', 'index.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'nested'),
+          },
+          {
+            filePath: path.join(rootDir, 'nested.js'),
+          },
+          {
+            filePath: path.join(rootDir, 'nested.json'),
+          },
+          {
+            filePath: path.join(rootDir, 'nested', 'package.json'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -589,6 +1248,21 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'nested', 'test.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'nested', 'test.js'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -602,6 +1276,30 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'nested', 'index.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'nested'),
+          },
+          {
+            filePath: path.join(rootDir, 'nested.js'),
+          },
+          {
+            filePath: path.join(rootDir, 'nested.json'),
+          },
+          {
+            filePath: path.join(rootDir, 'nested', 'package.json'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -615,6 +1313,21 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'bar.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'bar.js'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -628,6 +1341,21 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'nested', 'test.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'nested', 'test'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -641,6 +1369,21 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'nested', 'test.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'nested', 'test.js'),
+          },
+        ],
+        invalidateOnFileChange: [path.join(rootDir, 'package.json')],
       });
     });
 
@@ -654,6 +1397,29 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(rootDir, 'nested', 'test.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(
+              rootDir,
+              'node_modules',
+              'package-alias',
+              'foo.js',
+            ),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'nested', 'test.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'package-alias', 'package.json'),
+        ],
       });
     });
 
@@ -667,6 +1433,29 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(__dirname, '..', 'src', '_empty.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-browser-exclude',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-browser-exclude',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -680,6 +1469,29 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(__dirname, '..', 'src', '_empty.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/package-alias-exclude',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'package-alias-exclude',
+            'package.json',
+          ),
+        ],
       });
     });
   });
@@ -693,8 +1505,26 @@ describe('resolver', function() {
         parent: path.join(rootDir, 'foo.js'),
       });
       assert.deepEqual(resolved, {
-        filePath: path.join(rootDir, 'node_modules', 'source', 'source.js'),
+        filePath: path.join(rootDir, 'packages', 'source', 'source.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/source',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'source', 'package.json'),
+        ],
       });
     });
 
@@ -713,6 +1543,29 @@ describe('resolver', function() {
           'dist.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/source-not-symlinked',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'source-not-symlinked',
+            'package.json',
+          ),
+        ],
       });
     });
 
@@ -724,13 +1577,26 @@ describe('resolver', function() {
         parent: path.join(rootDir, 'foo.js'),
       });
       assert.deepEqual(resolved, {
-        filePath: path.join(
-          rootDir,
-          'node_modules',
-          'source-alias',
-          'source.js',
-        ),
+        filePath: path.join(rootDir, 'packages', 'source-alias', 'source.js'),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/source-alias',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(rootDir, 'node_modules', 'source-alias', 'package.json'),
+        ],
       });
     });
 
@@ -744,13 +1610,61 @@ describe('resolver', function() {
       assert.deepEqual(resolved, {
         filePath: path.join(
           rootDir,
-          'node_modules',
+          'packages',
           'source-alias-glob',
           'src',
           'test.js',
         ),
         sideEffects: undefined,
+        invalidateOnFileCreate: [
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'index'),
+          },
+          {
+            fileName: 'package.json',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+          {
+            fileName: 'node_modules/source-alias-glob',
+            aboveFilePath: path.join(rootDir, 'foo.js'),
+          },
+        ],
+        invalidateOnFileChange: [
+          path.join(rootDir, 'package.json'),
+          path.join(
+            rootDir,
+            'node_modules',
+            'source-alias-glob',
+            'package.json',
+          ),
+        ],
       });
+    });
+  });
+
+  describe('symlinks', function() {
+    it('should resolve symlinked files to their realpath', async function() {
+      let resolved = await resolver.resolve({
+        env: BROWSER_ENV,
+        filename: './baz.js',
+        isURL: false,
+        parent: path.join(rootDir, 'foo.js'),
+      });
+      assert.equal(nullthrows(resolved).filePath, path.join(rootDir, 'bar.js'));
+    });
+
+    it('should resolve symlinked directories to their realpath', async function() {
+      let resolved = await resolver.resolve({
+        env: BROWSER_ENV,
+        filename: './symlinked-nested',
+        isURL: false,
+        parent: path.join(rootDir, 'foo.js'),
+      });
+      assert.equal(
+        nullthrows(resolved).filePath,
+        path.join(rootDir, 'nested', 'index.js'),
+      );
     });
   });
 

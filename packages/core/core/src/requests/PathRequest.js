@@ -1,6 +1,11 @@
 // @flow strict-local
 import type {Diagnostic} from '@parcel/diagnostic';
-import type {Async, QueryParameters} from '@parcel/types';
+import type {
+  Async,
+  FileCreateInvalidation,
+  FilePath,
+  QueryParameters,
+} from '@parcel/types';
 import type {StaticRunOpts} from '../RequestTracker';
 import type {AssetGroup, Dependency, ParcelOptions} from '../types';
 import type {ConfigAndCachePath} from './ParcelConfigRequest';
@@ -16,65 +21,80 @@ import {report} from '../ReporterRunner';
 import PublicDependency from '../public/Dependency';
 import PluginOptions from '../public/PluginOptions';
 import ParcelConfig from '../ParcelConfig';
-import createParcelConfigRequest from './ParcelConfigRequest';
-
-export type PathRequestResult = AssetGroup | null | void;
+import createParcelConfigRequest, {
+  getCachedParcelConfig,
+} from './ParcelConfigRequest';
 
 export type PathRequest = {|
   id: string,
   +type: 'path_request',
-  run: RunOpts => Promise<PathRequestResult>,
-  input: Dependency,
+  run: RunOpts => Async<?AssetGroup>,
+  input: PathRequestInput,
+|};
+
+export type PathRequestInput = {|
+  dependency: Dependency,
+  name: string,
 |};
 
 type RunOpts = {|
-  input: Dependency,
-  ...StaticRunOpts,
+  input: PathRequestInput,
+  ...StaticRunOpts<?AssetGroup>,
 |};
 
 const type = 'path_request';
 const QUERY_PARAMS_REGEX = /^([^\t\r\n\v\f?]*)(\?.*)?/;
 
 export default function createPathRequest(
-  input: Dependency,
-): {|
-  id: string,
-  input: Dependency,
-  run: ({|input: Dependency, ...StaticRunOpts|}) => Async<?AssetGroup>,
-  +type: string,
-|} {
+  input: PathRequestInput,
+): PathRequest {
   return {
-    id: input.id,
+    id: input.dependency.id + ':' + input.name,
     type,
     run,
     input,
   };
 }
+
 async function run({input, api, options}: RunOpts) {
-  let {config} = nullthrows(
+  let configResult = nullthrows(
     await api.runRequest<null, ConfigAndCachePath>(createParcelConfigRequest()),
   );
+  let config = getCachedParcelConfig(configResult, options);
   let resolverRunner = new ResolverRunner({
     options,
-    config: new ParcelConfig(
-      config,
-      options.packageManager,
-      options.inputFS,
-      options.autoinstall,
-    ),
+    config,
   });
-  let assetGroup = await resolverRunner.resolve(input);
+  let result = await resolverRunner.resolve(input.dependency);
 
-  if (assetGroup != null) {
-    api.invalidateOnFileDelete(assetGroup.filePath);
+  if (result != null) {
+    if (result.invalidateOnFileCreate) {
+      for (let file of result.invalidateOnFileCreate) {
+        api.invalidateOnFileCreate(file);
+      }
+    }
+
+    if (result.invalidateOnFileChange) {
+      for (let filePath of result.invalidateOnFileChange) {
+        api.invalidateOnFileUpdate(filePath);
+        api.invalidateOnFileDelete(filePath);
+      }
+    }
+
+    api.invalidateOnFileDelete(result.assetGroup.filePath);
+    return result.assetGroup;
   }
-
-  return assetGroup;
 }
 
 type ResolverRunnerOpts = {|
   config: ParcelConfig,
   options: ParcelOptions,
+|};
+
+type ResolverResult = {|
+  assetGroup: AssetGroup,
+  invalidateOnFileCreate?: Array<FileCreateInvalidation>,
+  invalidateOnFileChange?: Array<FilePath>,
 |};
 
 export class ResolverRunner {
@@ -113,7 +133,7 @@ export class ResolverRunner {
     return new ThrowableDiagnostic({diagnostic});
   }
 
-  async resolve(dependency: Dependency): Promise<?AssetGroup> {
+  async resolve(dependency: Dependency): Promise<?ResolverResult> {
     let dep = new PublicDependency(dependency);
     report({
       type: 'buildProgress',
@@ -125,7 +145,7 @@ export class ResolverRunner {
 
     let pipeline;
     let filePath;
-    let query: QueryParameters = {};
+    let query: ?QueryParameters;
     let validPipelines = new Set(this.config.getNamedPipelines());
     if (
       // Don't consider absolute paths. Absolute paths are only supported for entries,
@@ -202,28 +222,38 @@ export class ResolverRunner {
 
           if (result.filePath != null) {
             return {
-              canDefer: result.canDefer,
-              filePath: result.filePath,
-              query,
-              sideEffects: result.sideEffects,
-              code: result.code,
-              env: dependency.env,
-              pipeline: pipeline ?? dependency.pipeline,
-              isURL: dependency.isURL,
+              assetGroup: {
+                canDefer: result.canDefer,
+                filePath: result.filePath,
+                query,
+                sideEffects: result.sideEffects,
+                code: result.code,
+                env: dependency.env,
+                pipeline: pipeline ?? dependency.pipeline,
+                isURL: dependency.isURL,
+              },
+              invalidateOnFileCreate: result.invalidateOnFileCreate,
+              invalidateOnFileChange: result.invalidateOnFileChange,
             };
           }
 
           if (result.diagnostics) {
-            if (Array.isArray(result.diagnostics)) {
-              diagnostics.push(...result.diagnostics);
-            } else {
-              diagnostics.push(result.diagnostics);
-            }
+            let errorDiagnostic = errorToDiagnostic(
+              new ThrowableDiagnostic({diagnostic: result.diagnostics}),
+              {
+                origin: resolver.name,
+                filePath,
+              },
+            );
+            diagnostics.push(...errorDiagnostic);
           }
         }
       } catch (e) {
         // Add error to error map, we'll append these to the standard error if we can't resolve the asset
-        let errorDiagnostic = errorToDiagnostic(e, resolver.name);
+        let errorDiagnostic = errorToDiagnostic(e, {
+          origin: resolver.name,
+          filePath,
+        });
         if (Array.isArray(errorDiagnostic)) {
           diagnostics.push(...errorDiagnostic);
         } else {
@@ -238,11 +268,10 @@ export class ResolverRunner {
       return null;
     }
 
+    let resolveFrom = dependency.resolveFrom ?? dependency.sourcePath;
     let dir =
-      dependency.sourcePath != null
-        ? escapeMarkdown(
-            relativePath(this.options.projectRoot, dependency.sourcePath),
-          )
+      resolveFrom != null
+        ? escapeMarkdown(relativePath(this.options.projectRoot, resolveFrom))
         : '';
 
     let specifier = escapeMarkdown(dependency.moduleSpecifier || '');

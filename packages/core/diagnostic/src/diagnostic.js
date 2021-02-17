@@ -119,14 +119,17 @@ export function anyToDiagnostic(input: Diagnostifiable): Array<Diagnostic> {
 /** Normalize the given error into a diagnostic. */
 export function errorToDiagnostic(
   error: ThrowableDiagnostic | PrintableError | string,
-  realOrigin?: string,
+  defaultValues: {|
+    origin?: ?string,
+    filePath?: ?string,
+  |} = {...null},
 ): Array<Diagnostic> {
   let codeFrame: DiagnosticCodeFrame | void = undefined;
 
   if (typeof error === 'string') {
     return [
       {
-        origin: realOrigin ?? 'Error',
+        origin: defaultValues?.origin ?? 'Error',
         message: error,
         codeFrame,
       },
@@ -137,7 +140,7 @@ export function errorToDiagnostic(
     return error.diagnostics.map(d => {
       return {
         ...d,
-        origin: realOrigin ?? d.origin ?? 'unknown',
+        origin: d.origin ?? defaultValues?.origin ?? 'unknown',
       };
     });
   }
@@ -162,10 +165,14 @@ export function errorToDiagnostic(
 
   return [
     {
-      origin: realOrigin ?? 'Error',
+      origin: defaultValues?.origin ?? 'Error',
       message: error.message,
       name: error.name,
-      filePath: error.filePath ?? error.fileName,
+      filePath:
+        error.filePath ??
+        error.fileName ??
+        defaultValues?.filePath ??
+        undefined,
       stack: error.highlightedCodeFrame ?? error.codeFrame ?? error.stack,
       codeFrame,
     },
@@ -207,11 +214,17 @@ export default class ThrowableDiagnostic extends Error {
  * <code>type</code> signifies whether the key of the value in a JSON object should be highlighted.
  */
 export function generateJSONCodeHighlights(
-  code: string,
+  data:
+    | string
+    | {|
+        data: mixed,
+        pointers: {|[key: string]: Mapping|},
+      |},
   ids: Array<{|key: string, type?: ?'key' | 'value', message?: string|}>,
 ): Array<DiagnosticCodeHighlight> {
   // json-source-map doesn't support a tabWidth option (yet)
-  let map = jsonMap.parse(code.replace(/\t/g, ' '));
+  let map =
+    typeof data == 'string' ? jsonMap.parse(data.replace(/\t/g, ' ')) : data;
   return ids.map(({key, type, message}) => {
     let pos = nullthrows(map.pointers[key]);
     return {

@@ -12,7 +12,8 @@ import type {
   Dependency as IDependency,
   DependencyOptions,
   Environment as IEnvironment,
-  EnvironmentOpts,
+  EnvironmentOptions,
+  FileCreateInvalidation,
   FilePath,
   Meta,
   MutableAsset as IMutableAsset,
@@ -108,7 +109,7 @@ class BaseAsset {
   }
 
   get query(): QueryParameters {
-    return this.#asset.value.query;
+    return this.#asset.value.query ?? {};
   }
 
   get meta(): Meta {
@@ -278,6 +279,10 @@ export class MutableAsset extends BaseAsset implements IMutableAsset {
     this.#asset.addIncludedFile(filePath);
   }
 
+  invalidateOnFileCreate(invalidation: FileCreateInvalidation): void {
+    this.#asset.invalidateOnFileCreate(invalidation);
+  }
+
   invalidateOnEnvChange(env: string): void {
     this.#asset.invalidateOnEnvChange(env);
   }
@@ -311,7 +316,7 @@ export class MutableAsset extends BaseAsset implements IMutableAsset {
     });
   }
 
-  setEnvironment(env: EnvironmentOpts): void {
+  setEnvironment(env: EnvironmentOptions): void {
     this.#asset.value.env = createEnvironment(env);
   }
 }

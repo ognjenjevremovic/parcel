@@ -6,6 +6,7 @@ import type {
   ConfigResult,
   DependencyOptions,
   FilePath,
+  FileCreateInvalidation,
   PackageJSON,
   PackageName,
   TransformerResult,
@@ -18,6 +19,7 @@ import type {
 } from './types';
 
 import v8 from 'v8';
+import invariant from 'assert';
 import {Readable} from 'stream';
 import SourceMap from '@parcel/source-map';
 import {
@@ -48,6 +50,7 @@ type UncommittedAssetOptions = {|
   isASTDirty?: ?boolean,
   idBase?: ?string,
   invalidations?: Map<string, RequestInvalidation>,
+  fileCreateInvalidations?: Array<FileCreateInvalidation>,
 |};
 
 export default class UncommittedAsset {
@@ -60,6 +63,7 @@ export default class UncommittedAsset {
   isASTDirty: boolean;
   idBase: ?string;
   invalidations: Map<string, RequestInvalidation>;
+  fileCreateInvalidations: Array<FileCreateInvalidation>;
 
   constructor({
     value,
@@ -70,6 +74,7 @@ export default class UncommittedAsset {
     isASTDirty,
     idBase,
     invalidations,
+    fileCreateInvalidations,
   }: UncommittedAssetOptions) {
     this.value = value;
     this.options = options;
@@ -79,6 +84,7 @@ export default class UncommittedAsset {
     this.isASTDirty = isASTDirty || false;
     this.idBase = idBase;
     this.invalidations = invalidations || new Map();
+    this.fileCreateInvalidations = fileCreateInvalidations || [];
   }
 
   /*
@@ -105,14 +111,7 @@ export default class UncommittedAsset {
     // and hash while it's being written to the cache.
     await Promise.all([
       contentKey != null &&
-        this.options.cache.setStream(
-          contentKey,
-          this.getStream().pipe(
-            new TapStream(buf => {
-              size += buf.length;
-            }),
-          ),
-        ),
+        this.commitContent(contentKey).then(s => (size = s)),
       this.mapBuffer != null &&
         mapKey != null &&
         this.options.cache.setBlob(mapKey, this.mapBuffer),
@@ -141,6 +140,36 @@ export default class UncommittedAsset {
     this.value.committed = true;
   }
 
+  async commitContent(contentKey: string): Promise<number> {
+    let content = await this.content;
+    if (content == null) {
+      return 0;
+    }
+
+    let size = 0;
+    if (content instanceof Readable) {
+      await this.options.cache.setStream(
+        contentKey,
+        content.pipe(
+          new TapStream(buf => {
+            size += buf.length;
+          }),
+        ),
+      );
+
+      return size;
+    }
+
+    if (typeof content === 'string') {
+      size = Buffer.byteLength(content);
+    } else {
+      size = content.length;
+    }
+
+    await this.options.cache.setBlob(contentKey, content);
+    return size;
+  }
+
   async getCode(): Promise<string> {
     if (this.ast != null && this.isASTDirty) {
       throw new Error(
@@ -156,7 +185,7 @@ export default class UncommittedAsset {
       return (await this.content).toString();
     }
 
-    return '';
+    invariant(false, 'Internal error: missing content');
   }
 
   async getBuffer(): Promise<Buffer> {
@@ -297,6 +326,10 @@ export default class UncommittedAsset {
     this.invalidations.set(getInvalidationId(invalidation), invalidation);
   }
 
+  invalidateOnFileCreate(invalidation: FileCreateInvalidation) {
+    this.fileCreateInvalidations.push(invalidation);
+  }
+
   invalidateOnEnvChange(key: string) {
     let invalidation: RequestInvalidation = {
       type: 'env',
@@ -328,6 +361,7 @@ export default class UncommittedAsset {
         hash: this.value.hash,
         filePath: this.value.filePath,
         type: result.type,
+        query: result.query,
         isIsolated: result.isIsolated ?? this.value.isIsolated,
         isInline: result.isInline ?? this.value.isInline,
         isSplittable: result.isSplittable ?? this.value.isSplittable,
@@ -366,6 +400,7 @@ export default class UncommittedAsset {
       mapBuffer: result.map ? result.map.toBuffer() : null,
       idBase: this.idBase,
       invalidations: this.invalidations,
+      fileCreateInvalidations: this.fileCreateInvalidations,
     });
 
     let dependencies = result.dependencies;

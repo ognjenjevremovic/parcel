@@ -2,6 +2,7 @@
 
 import type {Bundle, ParcelOptions, ProcessedParcelConfig} from './types';
 import type {SharedReference, WorkerApi} from '@parcel/workers';
+import {loadConfig as configCache} from '@parcel/utils';
 
 import invariant from 'assert';
 import nullthrows from 'nullthrows';
@@ -48,18 +49,23 @@ function loadOptions(ref, workerApi) {
 }
 
 async function loadConfig(cachePath, options) {
-  let processedConfig =
-    parcelConfigCache.get(cachePath) ??
-    nullthrows(await options.cache.get(cachePath));
-  let config = new ParcelConfig(
+  let config = parcelConfigCache.get(cachePath);
+  if (config) {
+    return config;
+  }
+
+  let processedConfig = nullthrows(await options.cache.get(cachePath));
+  config = new ParcelConfig(
     // $FlowFixMe
     ((processedConfig: any): ProcessedParcelConfig),
-    options.packageManager,
-    options.inputFS,
-    options.autoinstall,
+    options,
   );
   parcelConfigCache.set(cachePath, config);
   return config;
+}
+
+export function clearConfigCache() {
+  configCache.clear();
 }
 
 export async function runTransform(
@@ -122,12 +128,7 @@ export async function runPackage(
     configRef,
     // $FlowFixMe
   ): any): ProcessedParcelConfig);
-  let parcelConfig = new ParcelConfig(
-    processedConfig,
-    options.packageManager,
-    options.inputFS,
-    options.autoinstall,
-  );
+  let parcelConfig = new ParcelConfig(processedConfig, options);
 
   let runner = new PackagerRunner({
     config: parcelConfig,
@@ -166,6 +167,8 @@ export function invalidateRequireCache(workerApi: WorkerApi, file: string) {
         }
       }
     }
+
+    parcelConfigCache.clear();
     return;
   }
 

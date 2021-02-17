@@ -12,11 +12,11 @@ import fsVisitor from './visitors/fs';
 import insertGlobals from './visitors/globals';
 import traverse from '@babel/traverse';
 import {ancestor as walkAncestor} from '@parcel/babylon-walk';
-import * as babelCore from '@babel/core';
 import {hoist} from '@parcel/scope-hoisting';
 import {generate, parse} from '@parcel/babel-ast-utils';
 import {validateSchema} from '@parcel/utils';
 import {encodeJSONKeyComponent} from '@parcel/diagnostic';
+import {esm2cjs} from './visitors/modules';
 
 const CONFIG_SCHEMA: SchemaEntity = {
   type: 'object',
@@ -67,12 +67,15 @@ export default (new Transformer({
     if (result) {
       validateSchema.diagnostic(
         CONFIG_SCHEMA,
-        result.contents,
-        result.filePath,
+        {
+          data: result.contents,
+          // FIXME
+          source: await options.inputFS.readFile(result.filePath, 'utf8'),
+          filePath: result.filePath,
+          prependKey: `/${encodeJSONKeyComponent('@parcel/transformer-js')}`,
+        },
         // FIXME
-        await options.inputFS.readFile(result.filePath, 'utf8'),
         '@parcel/transformer-js',
-        `/${encodeJSONKeyComponent('@parcel/transformer-js')}`,
         'Invalid config for @parcel/transformer-js',
       );
     }
@@ -99,7 +102,7 @@ export default (new Transformer({
   async parse({asset, options}) {
     let code = await asset.getCode();
     if (
-      !asset.env.scopeHoist &&
+      !asset.env.shouldScopeHoist &&
       !canHaveDependencies(code) &&
       !ENV_RE.test(code) &&
       !BROWSER_RE.test(code) &&
@@ -181,7 +184,12 @@ export default (new Transformer({
 
     // Collect dependencies
     if (code == null || canHaveDependencies(code)) {
-      walkAncestor(ast.program, collectDependencies, {asset, ast, options});
+      walkAncestor(ast.program, collectDependencies, {
+        asset,
+        ast,
+        options,
+        logger,
+      });
     }
 
     // If there's a hashbang, remove it and store it on the asset meta.
@@ -193,32 +201,16 @@ export default (new Transformer({
       isASTDirty = true;
     }
 
-    if (isASTDirty) {
-      asset.setAST(ast);
-    }
-
-    if (asset.env.scopeHoist) {
+    if (asset.env.shouldScopeHoist) {
       hoist(asset, ast);
     } else if (asset.meta.isES6Module) {
       // Convert ES6 modules to CommonJS
-      let res = await babelCore.transformFromAstAsync(
-        ast.program,
-        code ?? undefined,
-        {
-          code: false,
-          ast: true,
-          filename: asset.filePath,
-          babelrc: false,
-          configFile: false,
-          plugins: [require('@babel/plugin-transform-modules-commonjs')],
-        },
-      );
+      esm2cjs(ast.program, asset);
+      isASTDirty = true;
+    }
 
-      asset.setAST({
-        type: 'babel',
-        version: '7.0.0',
-        program: res.ast,
-      });
+    if (isASTDirty) {
+      asset.setAST(ast);
     }
 
     return [asset];
