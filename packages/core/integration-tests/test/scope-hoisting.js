@@ -1,7 +1,7 @@
 import assert from 'assert';
 import path from 'path';
 import nullthrows from 'nullthrows';
-import {escapeMarkdown} from '@parcel/utils';
+import {escapeMarkdown, normalizePath} from '@parcel/utils';
 import {
   assertBundles,
   assertDependencyWasDeferred,
@@ -437,7 +437,7 @@ describe('scope hoisting', function() {
         'integration/scope-hoisting/es6/re-export-exclude-default/a.js',
       );
       let message = escapeMarkdown(
-        `${path.normalize(
+        `${normalizePath(
           'integration/scope-hoisting/es6/re-export-exclude-default/b.js',
         )} does not export 'default'`,
       );
@@ -474,7 +474,7 @@ describe('scope hoisting', function() {
         'integration/scope-hoisting/es6/re-export-missing/a.js',
       );
       let message = `${escapeMarkdown(
-        path.normalize('integration/scope-hoisting/es6/re-export-missing/c.js'),
+        normalizePath('integration/scope-hoisting/es6/re-export-missing/c.js'),
       )} does not export 'foo'`;
       await assert.rejects(() => bundle(path.join(__dirname, source)), {
         name: 'BuildError',
@@ -1463,7 +1463,7 @@ describe('scope hoisting', function() {
 
       it('throws an error for missing exports for dynamic import: destructured await assignment', async function() {
         let source = 'await-assignment-error.js';
-        let message = escapeMarkdown(`async.js does not export 'missing'`);
+        let message = escapeMarkdown(`./async.js does not export 'missing'`);
         await assert.rejects(
           () =>
             bundle(
@@ -1504,7 +1504,7 @@ describe('scope hoisting', function() {
 
       it('throws an error for missing exports for dynamic import: destructured await declaration', async function() {
         let source = 'await-declaration-error.js';
-        let message = escapeMarkdown(`async.js does not export 'missing'`);
+        let message = escapeMarkdown(`./async.js does not export 'missing'`);
         await assert.rejects(
           () =>
             bundle(
@@ -1545,7 +1545,7 @@ describe('scope hoisting', function() {
 
       it('throws an error for missing exports for dynamic import: namespace await declaration', async function() {
         let source = 'await-declaration-namespace-error.js';
-        let message = escapeMarkdown(`async.js does not export 'missing'`);
+        let message = escapeMarkdown(`./async.js does not export 'missing'`);
         await assert.rejects(
           () =>
             bundle(
@@ -1586,7 +1586,7 @@ describe('scope hoisting', function() {
 
       it('throws an error for missing exports for dynamic import: destructured then', async function() {
         let source = 'then-error.js';
-        let message = escapeMarkdown(`async.js does not export 'missing'`);
+        let message = escapeMarkdown(`./async.js does not export 'missing'`);
         await assert.rejects(
           () =>
             bundle(
@@ -1627,7 +1627,7 @@ describe('scope hoisting', function() {
 
       it('throws an error for missing exports for dynamic import: namespace then', async function() {
         let source = 'then-namespace-error.js';
-        let message = escapeMarkdown(`async.js does not export 'missing'`);
+        let message = escapeMarkdown(`./async.js does not export 'missing'`);
         await assert.rejects(
           () =>
             bundle(
@@ -3183,7 +3183,7 @@ describe('scope hoisting', function() {
         'integration/scope-hoisting/es6/unused-import-specifier/a.js',
       );
       let message = escapeMarkdown(
-        `${path.normalize(
+        `${normalizePath(
           'integration/scope-hoisting/es6/unused-import-specifier/b.js',
         )} does not export 'unused'`,
       );

@@ -30,7 +30,7 @@ import {ValueEmitter} from '@parcel/events';
 import {registerCoreWithSerializer} from './utils';
 import {createCacheDir} from '@parcel/cache';
 import {AbortController} from 'abortcontroller-polyfill/dist/cjs-ponyfill';
-import {PromiseQueue} from '@parcel/utils';
+import {PromiseQueue, toProjectPath} from '@parcel/utils';
 import ParcelConfig from './ParcelConfig';
 import logger from '@parcel/logger';
 import RequestTracker, {getWatcherOptions} from './RequestTracker';
@@ -353,7 +353,12 @@ export default class Parcel {
           return;
         }
 
-        let isInvalid = this.#requestTracker.respondToFSEvents(events);
+        let isInvalid = this.#requestTracker.respondToFSEvents(
+          events.map(e => ({
+            type: e.type,
+            path: toProjectPath(resolvedOptions.projectRoot, e.path),
+          })),
+        );
         if (isInvalid && this.#watchQueue.getNumWaiting() === 0) {
           if (this.#watchAbortController) {
             this.#watchAbortController.abort();

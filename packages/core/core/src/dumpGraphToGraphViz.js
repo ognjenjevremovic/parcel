@@ -5,6 +5,8 @@ import type {Environment} from './types';
 import type Graph from './Graph';
 import type {AssetGraphNode, BundleGraphNode} from './types';
 
+import {fromProjectPathRelative} from '@parcel/utils';
+
 import path from 'path';
 
 const COLORS = {
@@ -92,7 +94,10 @@ export default async function dumpGraphToGraphViz(
         }
       }
     } else if (node.type === 'asset') {
-      label += path.basename(node.value.filePath) + '#' + node.value.type;
+      label +=
+        path.basename(fromProjectPathRelative(node.value.filePath)) +
+        '#' +
+        node.value.type;
       if (detailedSymbols) {
         if (!node.value.symbols) {
           label += '\\nsymbols: cleared';

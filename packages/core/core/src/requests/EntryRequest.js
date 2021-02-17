@@ -1,14 +1,22 @@
 // @flow strict-local
 
-import type {Async, FilePath, File} from '@parcel/types';
+import type {Async, FilePath} from '@parcel/types';
 import type {StaticRunOpts} from '../RequestTracker';
-import type {Entry, ParcelOptions} from '../types';
+import type {Entry, ParcelOptions, InternalFile} from '../types';
+import type {ProjectPath} from '@parcel/utils';
 
-import {isDirectoryInside, isGlob, glob} from '@parcel/utils';
+import {
+  isDirectoryInside,
+  isGlob,
+  glob,
+  toProjectPath,
+  fromProjectPath,
+  fromProjectPathRelative,
+} from '@parcel/utils';
 import path from 'path';
 
 type RunOpts = {|
-  input: FilePath,
+  input: ProjectPath,
   ...StaticRunOpts<EntryResult>,
 |};
 
@@ -16,19 +24,19 @@ export type EntryRequest = {|
   id: string,
   +type: 'entry_request',
   run: RunOpts => Async<EntryResult>,
-  input: FilePath,
+  input: ProjectPath,
 |};
 
 export type EntryResult = {|
   entries: Array<Entry>,
-  files: Array<File>,
+  files: Array<InternalFile>,
 |};
 
 const type = 'entry_request';
 
-export default function createEntryRequest(input: FilePath): EntryRequest {
+export default function createEntryRequest(input: ProjectPath): EntryRequest {
   return {
-    id: `${type}:${input}`,
+    id: `${type}:${fromProjectPathRelative(input)}`,
     type,
     run,
     input,
@@ -37,7 +45,8 @@ export default function createEntryRequest(input: FilePath): EntryRequest {
 
 async function run({input, api, options}: RunOpts): Promise<EntryResult> {
   let entryResolver = new EntryResolver(options);
-  let result = await entryResolver.resolveEntry(input);
+  let filePath = fromProjectPath(options.projectRoot, input);
+  let result = await entryResolver.resolveEntry(filePath);
 
   // Connect files like package.json that affect the entry
   // resolution so we invalidate when they change.
@@ -48,7 +57,7 @@ async function run({input, api, options}: RunOpts): Promise<EntryResult> {
 
   // If the entry specifier is a glob, add a glob node so
   // we invalidate when a new file matches.
-  if (isGlob(input)) {
+  if (isGlob(filePath)) {
     api.invalidateOnFileCreate({glob: input});
   }
 
@@ -119,7 +128,12 @@ class EntryResolver {
         }
 
         return {
-          entries: [{filePath: source, packagePath: entry}],
+          entries: [
+            {
+              filePath: toProjectPath(this.options.projectRoot, source),
+              packagePath: toProjectPath(this.options.projectRoot, entry),
+            },
+          ],
           files: [{filePath: pkg.filePath}],
         };
       }
@@ -135,7 +149,12 @@ class EntryResolver {
         : projectRoot;
 
       return {
-        entries: [{filePath: entry, packagePath: packagePath}],
+        entries: [
+          {
+            filePath: toProjectPath(this.options.projectRoot, entry),
+            packagePath: toProjectPath(this.options.projectRoot, packagePath),
+          },
+        ],
         files: [],
       };
     }

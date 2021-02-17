@@ -2,8 +2,8 @@
 
 import type {
   FilePath,
-  FileCreateInvalidation,
   SemverRange,
+  FileCreateInvalidation,
   ModuleSpecifier,
 } from '@parcel/types';
 import type {FileSystem} from '@parcel/fs';

@@ -308,7 +308,7 @@ export class NodePackageManager implements PackageManager {
   }
 
   getInvalidations(name: ModuleSpecifier, from: FilePath): Invalidations {
-    let res = {
+    let res: Invalidations = {
       invalidateOnFileCreate: [],
       invalidateOnFileChange: new Set(),
     };

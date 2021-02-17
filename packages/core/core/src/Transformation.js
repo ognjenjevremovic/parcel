@@ -2,13 +2,13 @@
 
 import type {
   AST,
+  DependencyOptions,
   FilePath,
   FileCreateInvalidation,
   GenerateOutput,
   Transformer,
   TransformerResult,
   PackageName,
-  DevDepOptions,
 } from '@parcel/types';
 import type {WorkerApi} from '@parcel/workers';
 import type {
@@ -19,16 +19,23 @@ import type {
   DevDepRequest,
   ParcelOptions,
   ReportFn,
+  AssetGroup,
+  InternalFileCreateInvalidation,
+  InternalDevDepOptions,
 } from './types';
 import type {LoadedPlugin} from './ParcelConfig';
+import type {ProjectPath} from '@parcel/utils';
 
 import path from 'path';
 import nullthrows from 'nullthrows';
 import {
   escapeMarkdown,
+  fromProjectPath,
+  fromProjectPathRelative,
   md5FromOrderedObject,
-  normalizeSeparators,
   objectSortedEntries,
+  toProjectPath,
+  toProjectPathUnsafe,
 } from '@parcel/utils';
 import logger, {PluginLogger} from '@parcel/logger';
 import {init as initSourcemaps} from '@parcel/source-map';
@@ -59,6 +66,7 @@ import {optionsProxy} from './utils';
 import {createBuildCache} from './buildCache';
 import {createConfig} from './InternalConfig';
 import PublicConfig from './public/Config';
+import {invalidateOnFileCreateToInternal} from './utils';
 
 type GenerateFunc = (input: UncommittedAsset) => Promise<GenerateOutput>;
 
@@ -72,8 +80,8 @@ export type TransformationOpts = {|
 
 export type ConfigRequest = {|
   id: string,
-  includedFiles: Set<FilePath>,
-  invalidateOnFileCreate: Array<FileCreateInvalidation>,
+  includedFiles: Set<ProjectPath>,
+  invalidateOnFileCreate: Array<InternalFileCreateInvalidation>,
   shouldInvalidateOnStartup: boolean,
 |};
 
@@ -81,7 +89,7 @@ export type TransformationResult = {|
   assets: Array<AssetValue>,
   configRequests: Array<ConfigRequest>,
   invalidations: Array<RequestInvalidation>,
-  invalidateOnFileCreate: Array<FileCreateInvalidation>,
+  invalidateOnFileCreate: Array<InternalFileCreateInvalidation>,
   devDepRequests: Array<DevDepRequest>,
 |};
 
@@ -100,7 +108,7 @@ export default class Transformation {
   parcelConfig: ParcelConfig;
   report: ReportFn;
   invalidations: Map<string, RequestInvalidation>;
-  invalidateOnFileCreate: Array<FileCreateInvalidation>;
+  invalidateOnFileCreate: Array<InternalFileCreateInvalidation>;
 
   constructor({
     report,
@@ -137,38 +145,48 @@ export default class Transformation {
     this.report({
       type: 'buildProgress',
       phase: 'transforming',
-      filePath: this.request.filePath,
+      filePath: fromProjectPath(
+        this.options.projectRoot,
+        this.request.filePath,
+      ),
     });
 
-    let asset = await this.loadAsset();
+    let asset: UncommittedAsset = await this.loadAsset();
 
     // Load existing sourcemaps
     if (SOURCEMAP_EXTENSIONS.has(asset.value.type)) {
       try {
         await asset.loadExistingSourcemap();
       } catch (err) {
+        let filePath = fromProjectPath(
+          this.options.projectRoot,
+          this.request.filePath,
+        );
         logger.verbose([
           {
             origin: '@parcel/core',
             message: `Could not load existing source map for ${escapeMarkdown(
-              path.relative(this.options.projectRoot, asset.value.filePath),
+              fromProjectPathRelative(asset.value.filePath),
             )}`,
-            filePath: asset.value.filePath,
+            filePath,
           },
           {
             origin: '@parcel/core',
             message: escapeMarkdown(err.message),
-            filePath: asset.value.filePath,
+            filePath,
           },
         ]);
       }
     }
 
     for (let {moduleSpecifier, resolveFrom} of this.request.invalidDevDeps) {
-      let key = `${moduleSpecifier}:${resolveFrom}`;
+      let key = `${moduleSpecifier}:${fromProjectPathRelative(resolveFrom)}`;
       if (!invalidatedPlugins.has(key)) {
         this.parcelConfig.invalidatePlugin(moduleSpecifier);
-        this.options.packageManager.invalidate(moduleSpecifier, resolveFrom);
+        this.options.packageManager.invalidate(
+          moduleSpecifier,
+          fromProjectPath(this.options.projectRoot, resolveFrom),
+        );
         invalidatedPlugins.set(key, true);
       }
     }
@@ -234,26 +252,24 @@ export default class Transformation {
       size,
       hash,
       isSource: summarizedIsSource,
-    } = await summarizeRequest(this.options.inputFS, {filePath, code});
+    } = await summarizeRequest(this.options.inputFS, {
+      filePath: fromProjectPath(this.options.projectRoot, filePath),
+      code,
+    });
 
     // Prefer `isSource` originating from the AssetRequest.
     let isSource = isSourceOverride ?? summarizedIsSource;
 
     // If the transformer request passed code rather than a filename,
     // use a hash as the base for the id to ensure it is unique.
-    let idBase =
-      code != null
-        ? hash
-        : normalizeSeparators(
-            path.relative(this.options.projectRoot, filePath),
-          );
+    let idBase = code != null ? hash : fromProjectPathRelative(filePath);
     return new UncommittedAsset({
       idBase,
       value: createAsset({
         idBase,
         filePath,
         isSource,
-        type: path.extname(filePath).slice(1),
+        type: path.extname(fromProjectPathRelative(filePath)).slice(1),
         hash,
         pipeline,
         env,
@@ -338,7 +354,9 @@ export default class Transformation {
   async getPipelineHash(pipeline: Pipeline): Promise<string> {
     let hash = crypto.createHash('md5');
     for (let transformer of pipeline.transformers) {
-      let key = `${transformer.name}:${transformer.resolveFrom}`;
+      let key = `${transformer.name}:${fromProjectPathRelative(
+        transformer.resolveFrom,
+      )}`;
       hash.update(
         this.request.devDeps.get(key) ??
           this.devDepRequests.get(key)?.hash ??
@@ -381,7 +399,9 @@ export default class Transformation {
         }
 
         for (let devDep of config.devDeps) {
-          let key = `${devDep.moduleSpecifier}:${devDep.resolveFrom}`;
+          let key = `${devDep.moduleSpecifier}:${fromProjectPathRelative(
+            devDep.resolveFrom,
+          )}`;
           hash.update(nullthrows(this.devDepRequests.get(key)).hash);
         }
       }
@@ -391,11 +411,12 @@ export default class Transformation {
   }
 
   async addDevDependency(
-    opts: DevDepOptions,
+    opts: InternalDevDepOptions,
     transformer: LoadedPlugin<Transformer> | TransformerWithNameAndConfig,
   ): Promise<void> {
-    let {moduleSpecifier, resolveFrom, invalidateParcelPlugin} = opts;
-    let key = `${moduleSpecifier}:${resolveFrom}`;
+    let {moduleSpecifier} = opts;
+    let resolveFrom = opts.resolveFrom;
+    let key = `${moduleSpecifier}:${fromProjectPathRelative(resolveFrom)}`;
     if (this.devDepRequests.has(key)) {
       return;
     }
@@ -414,10 +435,13 @@ export default class Transformation {
     }
 
     // Ensure that the package manager has an entry for this resolution.
-    await this.options.packageManager.resolve(moduleSpecifier, resolveFrom);
+    await this.options.packageManager.resolve(
+      moduleSpecifier,
+      fromProjectPath(this.options.projectRoot, opts.resolveFrom),
+    );
     let invalidations = this.options.packageManager.getInvalidations(
       moduleSpecifier,
-      resolveFrom,
+      fromProjectPath(this.options.projectRoot, opts.resolveFrom),
     );
 
     // It is possible for a transformer to have multiple different hashes due to
@@ -427,7 +451,7 @@ export default class Transformation {
     hash = await getInvalidationHash(
       [...invalidations.invalidateOnFileChange].map(f => ({
         type: 'file',
-        filePath: f,
+        filePath: toProjectPath(this.options.projectRoot, f),
       })),
       this.options,
     );
@@ -436,8 +460,14 @@ export default class Transformation {
       moduleSpecifier,
       resolveFrom,
       hash,
-      invalidateOnFileCreate: invalidations.invalidateOnFileCreate,
-      invalidateOnFileChange: invalidations.invalidateOnFileChange,
+      invalidateOnFileCreate: invalidations.invalidateOnFileCreate.map(i =>
+        invalidateOnFileCreateToInternal(this.options.projectRoot, i),
+      ),
+      invalidateOnFileChange: new Set(
+        [...invalidations.invalidateOnFileChange].map(f =>
+          toProjectPath(this.options.projectRoot, f),
+        ),
+      ),
     };
 
     // Optionally also invalidate the parcel plugin that is loading the config
@@ -506,7 +536,10 @@ export default class Transformation {
           throw new ThrowableDiagnostic({
             diagnostic: errorToDiagnostic(e, {
               origin: transformer.name,
-              filePath: asset.value.filePath,
+              filePath: fromProjectPath(
+                this.options.projectRoot,
+                asset.value.filePath,
+              ),
             }),
           });
         }
@@ -625,7 +658,7 @@ export default class Transformation {
   }
 
   async loadPipeline(
-    filePath: FilePath,
+    filePath: ProjectPath,
     isSource: boolean,
     pipeline: ?string,
   ): Promise<Pipeline> {
@@ -673,14 +706,18 @@ export default class Transformation {
     newPipeline,
     currentPipeline,
   }: {|
-    filePath: string,
+    filePath: ProjectPath,
     isSource: boolean,
     newType: string,
     newPipeline: ?string,
     currentPipeline: Pipeline,
   |}): Promise<?Pipeline> {
-    let nextFilePath =
-      filePath.slice(0, -path.extname(filePath).length) + '.' + newType;
+    let filePathRelative = fromProjectPathRelative(filePath);
+    let nextFilePath = toProjectPathUnsafe(
+      filePathRelative.slice(0, -path.extname(filePathRelative).length) +
+        '.' +
+        newType,
+    );
     let nextPipeline = await this.loadPipeline(
       nextFilePath,
       isSource,
@@ -695,7 +732,7 @@ export default class Transformation {
   }
 
   async loadTransformerConfig(
-    filePath: FilePath,
+    filePath: ProjectPath,
     transformer: LoadedPlugin<Transformer>,
     isSource: boolean,
   ): Promise<?Config> {
@@ -714,7 +751,7 @@ export default class Transformation {
     try {
       await loadConfig({
         config: new PublicConfig(config, this.options),
-        options: this.options,
+        options: new PluginOptions(this.options),
         logger: new PluginLogger({origin: transformer.name}),
       });
     } catch (e) {
@@ -742,32 +779,43 @@ export default class Transformation {
     const logger = new PluginLogger({origin: transformerName});
 
     const resolve = async (from: FilePath, to: string): Promise<FilePath> => {
-      let result = nullthrows(
+      let result: {|
+        assetGroup: AssetGroup,
+        invalidateOnFileCreate?: Array<FileCreateInvalidation>,
+        invalidateOnFileChange?: Array<FilePath>,
+      |} = nullthrows(
         await pipeline.resolverRunner.resolve(
           createDependency({
             env: asset.value.env,
             moduleSpecifier: to,
-            sourcePath: from,
+            sourcePath: toProjectPath(this.options.projectRoot, from),
           }),
         ),
       );
 
       if (result.invalidateOnFileCreate) {
-        this.invalidateOnFileCreate.push(...result.invalidateOnFileCreate);
+        this.invalidateOnFileCreate.push(
+          ...result.invalidateOnFileCreate.map(i =>
+            invalidateOnFileCreateToInternal(this.options.projectRoot, i),
+          ),
+        );
       }
 
       if (result.invalidateOnFileChange) {
         for (let filePath of result.invalidateOnFileChange) {
           let invalidation = {
             type: 'file',
-            filePath,
+            filePath: toProjectPath(this.options.projectRoot, filePath),
           };
 
           this.invalidations.set(getInvalidationId(invalidation), invalidation);
         }
       }
 
-      return result.assetGroup.filePath;
+      return fromProjectPath(
+        this.options.projectRoot,
+        result.assetGroup.filePath,
+      );
     };
 
     // If an ast exists on the asset, but we cannot reuse it,
@@ -808,6 +856,7 @@ export default class Transformation {
 
     // Transform.
     let results = await normalizeAssets(
+      this.options,
       // $FlowFixMe
       await transformer.transform({
         asset: new MutableAsset(asset),
@@ -856,10 +905,11 @@ type TransformerWithNameAndConfig = {|
   plugin: Transformer,
   config: ?Config,
   configKeyPath: string,
-  resolveFrom: FilePath,
+  resolveFrom: ProjectPath,
 |};
 
 function normalizeAssets(
+  options,
   results: Array<TransformerResult | MutableAsset>,
 ): Promise<Array<TransformerResult>> {
   return Promise.all(
@@ -874,8 +924,24 @@ function normalizeAssets(
         ast: internalAsset.ast,
         content: await internalAsset.content,
         query: internalAsset.value.query,
-        // $FlowFixMe
-        dependencies: [...internalAsset.value.dependencies.values()],
+        dependencies: ([...internalAsset.value.dependencies.values()].map(
+          dep => {
+            // eslint-disable-next-line no-unused-vars
+            let {id, sourceAssetId, sourcePath, resolveFrom, ...rest} = dep;
+            // $FlowFixMe this isn't really compatible with DependencyOptions
+            return {
+              ...rest,
+              ...(resolveFrom != null
+                ? {
+                    resolveFrom: fromProjectPath(
+                      options.projectRoot,
+                      resolveFrom,
+                    ),
+                  }
+                : null),
+            };
+          },
+        ): Array<DependencyOptions>),
         env: internalAsset.value.env,
         filePath: result.filePath,
         isInline: result.isInline,

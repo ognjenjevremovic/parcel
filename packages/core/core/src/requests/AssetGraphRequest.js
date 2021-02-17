@@ -1,13 +1,6 @@
 // @flow strict-local
 
-import type {
-  Async,
-  FilePath,
-  ModuleSpecifier,
-  Symbol,
-  SourceLocation,
-  Meta,
-} from '@parcel/types';
+import type {Async, Symbol, SourceLocation, Meta} from '@parcel/types';
 import type {SharedReference} from '@parcel/workers';
 import type {Diagnostic} from '@parcel/diagnostic';
 import type {
@@ -27,11 +20,12 @@ import type {EntryResult} from './EntryRequest';
 import type {PathRequestInput} from './PathRequest';
 
 import invariant from 'assert';
-import path from 'path';
 import {
+  type ProjectPath,
   escapeMarkdown,
   md5FromOrderedObject,
   PromiseQueue,
+  fromProjectPathRelative,
 } from '@parcel/utils';
 import ThrowableDiagnostic from '@parcel/diagnostic';
 import AssetGraph from '../AssetGraph';
@@ -44,7 +38,7 @@ import createPathRequest from './PathRequest';
 import dumpToGraphViz from '../dumpGraphToGraphViz';
 
 type AssetGraphRequestInput = {|
-  entries?: Array<string>,
+  entries?: Array<ProjectPath>,
   assetGroups?: Array<AssetGroup>,
   optionsRef: SharedReference,
   name: string,
@@ -428,10 +422,7 @@ export class AssetGraphBuilder {
 
             errors.push({
               message: `${escapeMarkdown(
-                path.relative(
-                  this.options.projectRoot,
-                  resolution.value.filePath,
-                ),
+                fromProjectPathRelative(resolution.value.filePath),
               )} does not export '${s}'`,
               origin: '@parcel/core',
               filePath: loc?.filePath,
@@ -693,9 +684,9 @@ export class AssetGraphBuilder {
     );
   }
 
-  async runEntryRequest(input: ModuleSpecifier) {
+  async runEntryRequest(input: ProjectPath) {
     let request = createEntryRequest(input);
-    let result = await this.api.runRequest<FilePath, EntryResult>(request, {
+    let result = await this.api.runRequest<ProjectPath, EntryResult>(request, {
       force: true,
     });
     this.assetGraph.resolveEntry(request.input, result.entries, request.id);

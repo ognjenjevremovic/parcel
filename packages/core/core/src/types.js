@@ -7,7 +7,6 @@ import type {
   Engines,
   EnvironmentContext,
   EnvMap,
-  FileCreateInvalidation,
   FilePath,
   Glob,
   LogLevel,
@@ -27,16 +26,16 @@ import type {
   HMROptions,
   QueryParameters,
   DetailedReportOptions,
-  DevDepOptions,
 } from '@parcel/types';
 import type {SharedReference} from '@parcel/workers';
 import type {FileSystem} from '@parcel/fs';
 import type Cache from '@parcel/cache';
 import type {PackageManager} from '@parcel/package-manager';
+import type {ProjectPath} from '@parcel/utils';
 
 export type ParcelPluginNode = {|
   packageName: PackageName,
-  resolveFrom: FilePath,
+  resolveFrom: ProjectPath,
   keyPath: string,
 |};
 
@@ -46,6 +45,7 @@ export type ExtendableParcelConfigPipeline = $ReadOnlyArray<
 >;
 
 export type ProcessedParcelConfig = {|
+  // TODO ProjectPath?
   extends?: PackageName | FilePath | Array<PackageName | FilePath>,
   resolvers?: PureParcelConfigPipeline,
   transformers?: {[Glob]: ExtendableParcelConfigPipeline, ...},
@@ -56,8 +56,8 @@ export type ProcessedParcelConfig = {|
   optimizers?: {[Glob]: ExtendableParcelConfigPipeline, ...},
   reporters?: PureParcelConfigPipeline,
   validators?: {[Glob]: ExtendableParcelConfigPipeline, ...},
-  filePath: FilePath,
-  resolveFrom?: FilePath,
+  filePath: ProjectPath,
+  resolveFrom?: ProjectPath,
 |};
 
 export type Environment = {|
@@ -77,7 +77,7 @@ export type Environment = {|
 
 export type Target = {|
   distEntry?: ?FilePath,
-  distDir: FilePath,
+  distDir: ProjectPath,
   env: Environment,
   name: string,
   publicUrl: string,
@@ -98,8 +98,8 @@ export type Dependency = {|
   meta: Meta,
   target: ?Target,
   sourceAssetId: ?string,
-  sourcePath: ?string,
-  resolveFrom: ?string,
+  sourcePath: ?ProjectPath,
+  resolveFrom: ?ProjectPath,
   symbols: ?Map<
     Symbol,
     {|local: Symbol, loc: ?SourceLocation, isWeak: boolean, meta?: ?Meta|},
@@ -111,7 +111,7 @@ export type Asset = {|
   id: string,
   committed: boolean,
   hash: ?string,
-  filePath: FilePath,
+  filePath: ProjectPath,
   query: ?QueryParameters,
   type: string,
   dependencies: Map<string, Dependency>,
@@ -131,14 +131,21 @@ export type Asset = {|
   symbols: ?Map<Symbol, {|local: Symbol, loc: ?SourceLocation, meta?: ?Meta|}>,
   sideEffects: boolean,
   uniqueKey: ?string,
-  configPath?: FilePath,
+  configPath?: ProjectPath,
   plugin: ?PackageName,
   configKeyPath?: string,
 |};
 
+export type InternalGlob = ProjectPath;
+
+export type InternalFile = {|
+  +filePath: ProjectPath,
+  +hash?: string,
+|};
+
 export type FileInvalidation = {|
   type: 'file',
-  filePath: FilePath,
+  filePath: ProjectPath,
 |};
 
 export type EnvInvalidation = {|
@@ -156,21 +163,39 @@ export type RequestInvalidation =
   | EnvInvalidation
   | OptionInvalidation;
 
+export type InternalFileInvalidation = {|
+  filePath: ProjectPath,
+|};
+
+export type InternalGlobInvalidation = {|
+  glob: InternalGlob,
+|};
+
+export type InternalFileAboveInvalidation = {|
+  fileName: string,
+  aboveFilePath: ProjectPath,
+|};
+
+export type InternalFileCreateInvalidation =
+  | InternalFileInvalidation
+  | InternalGlobInvalidation
+  | InternalFileAboveInvalidation;
+
 export type DevDepRequest = {|
   moduleSpecifier: ModuleSpecifier,
-  resolveFrom: FilePath,
+  resolveFrom: ProjectPath,
   hash: string,
-  invalidateOnFileCreate?: Array<FileCreateInvalidation>,
-  invalidateOnFileChange?: Set<FilePath>,
+  invalidateOnFileCreate?: Array<InternalFileCreateInvalidation>,
+  invalidateOnFileChange?: Set<ProjectPath>,
   additionalInvalidations?: Array<{|
     moduleSpecifier: ModuleSpecifier,
-    resolveFrom: FilePath,
+    resolveFrom: ProjectPath,
   |}>,
 |};
 
 export type ParcelOptions = {|
-  entries: Array<FilePath>,
-  entryRoot: FilePath,
+  entries: Array<ProjectPath>,
+  entryRoot: ProjectPath,
   config?: ModuleSpecifier,
   defaultConfig?: ModuleSpecifier,
   env: EnvMap,
@@ -184,8 +209,7 @@ export type ParcelOptions = {|
   serveOptions: ServerOptions | false,
   shouldAutoInstall: boolean,
   logLevel: LogLevel,
-  projectRoot: FilePath,
-  lockFile: ?FilePath,
+  projectRoot: string, // TODO
   shouldProfile: boolean,
   shouldPatchConsole: boolean,
   detailedReport?: ?DetailedReportOptions,
@@ -202,7 +226,7 @@ export type ParcelOptions = {|
     +shouldScopeHoist: boolean,
     +sourceMaps: boolean,
     +publicUrl: string,
-    +distDir?: FilePath,
+    +distDir?: ProjectPath,
     +engines?: Engines,
   |},
 |};
@@ -256,7 +280,7 @@ export type RootNode = {|id: string, +type: 'root', value: string | null|};
 
 export type AssetRequestInput = {|
   name?: string, // AssetGraph name, needed so that different graphs can isolated requests since the results are not stored
-  filePath: FilePath,
+  filePath: ProjectPath,
   env: Environment,
   isSource?: boolean,
   canDefer?: boolean,
@@ -292,7 +316,7 @@ export type TransformationRequest = {|
   devDeps: Map<PackageName, string>,
   invalidDevDeps: Array<{|
     moduleSpecifier: ModuleSpecifier,
-    resolveFrom: FilePath,
+    resolveFrom: ProjectPath,
   |}>,
 |};
 
@@ -311,13 +335,13 @@ export type AssetRequestNode = {|
 export type EntrySpecifierNode = {|
   id: string,
   +type: 'entry_specifier',
-  value: ModuleSpecifier,
+  value: ProjectPath,
   correspondingRequest?: string,
 |};
 
 export type Entry = {|
-  filePath: FilePath,
-  packagePath: FilePath,
+  filePath: ProjectPath,
+  packagePath: ProjectPath,
 |};
 
 export type EntryFileNode = {|
@@ -344,16 +368,22 @@ export type BundleGraphNode =
   | BundleGroupNode
   | BundleNode;
 
+export type InternalDevDepOptions = {|
+  moduleSpecifier: ModuleSpecifier,
+  resolveFrom: ProjectPath,
+  invalidateParcelPlugin?: boolean,
+|};
+
 export type Config = {|
   id: string,
   isSource: boolean,
-  searchPath: FilePath,
+  searchPath: ProjectPath,
   env: Environment,
   resultHash: ?string,
   result: ConfigResult,
-  includedFiles: Set<FilePath>,
-  invalidateOnFileCreate: Array<FileCreateInvalidation>,
-  devDeps: Array<DevDepOptions>,
+  includedFiles: Set<ProjectPath>,
+  invalidateOnFileCreate: Array<InternalFileCreateInvalidation>,
+  devDeps: Array<InternalDevDepOptions>,
   shouldInvalidateOnStartup: boolean,
 |};
 
@@ -365,13 +395,13 @@ export type DepVersionRequestNode = {|
 
 export type DepVersionRequestDesc = {|
   moduleSpecifier: PackageName,
-  resolveFrom: FilePath,
+  resolveFrom: ProjectPath,
   result?: Semver,
 |};
 
 export type EntryRequest = {|
   specifier: ModuleSpecifier,
-  result?: FilePath,
+  result?: ProjectPath,
 |};
 
 export type EntryRequestNode = {|
@@ -383,11 +413,11 @@ export type EntryRequestNode = {|
 export type TargetRequestNode = {|
   id: string,
   +type: 'target_request',
-  value: FilePath,
+  value: ProjectPath,
 |};
 
 export type CacheEntry = {|
-  filePath: FilePath,
+  filePath: ProjectPath,
   env: Environment,
   hash: string,
   assets: Array<Asset>,
@@ -407,7 +437,7 @@ export type Bundle = {|
   isInline: ?boolean,
   isSplittable: ?boolean,
   target: Target,
-  filePath: ?FilePath,
+  filePath: ?ProjectPath,
   name: ?string,
   displayName: ?string,
   pipeline: ?string,

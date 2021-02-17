@@ -5,7 +5,9 @@ import type {
   Environment as IEnvironment,
   SourceLocation,
 } from '@parcel/types';
-import type {Target as TargetValue} from '../types';
+import type {Target as TargetValue, ParcelOptions} from '../types';
+
+import {fromProjectPath} from '@parcel/utils';
 import Environment from './Environment';
 import nullthrows from 'nullthrows';
 
@@ -17,14 +19,16 @@ export function targetToInternalTarget(target: ITarget): TargetValue {
 
 export default class Target implements ITarget {
   #target /*: TargetValue */;
+  #options /*: ParcelOptions */;
 
-  constructor(target: TargetValue): Target {
+  constructor(target: TargetValue, options: ParcelOptions): Target {
     let existing = internalTargetToTarget.get(target);
     if (existing != null) {
       return existing;
     }
 
     this.#target = target;
+    this.#options = options;
     _targetToInternalTarget.set(this, target);
     internalTargetToTarget.set(target, this);
     return this;
@@ -35,7 +39,7 @@ export default class Target implements ITarget {
   }
 
   get distDir(): FilePath {
-    return this.#target.distDir;
+    return fromProjectPath(this.#options.projectRoot, this.#target.distDir);
   }
 
   get env(): IEnvironment {

@@ -11,7 +11,11 @@ import type {
 import type {ConfigAndCachePath} from './ParcelConfigRequest';
 import type {TransformationResult} from '../Transformation';
 
-import {md5FromOrderedObject, objectSortedEntries} from '@parcel/utils';
+import {
+  md5FromOrderedObject,
+  objectSortedEntries,
+  fromProjectPathRelative,
+} from '@parcel/utils';
 import nullthrows from 'nullthrows';
 import createParcelConfigRequest from './ParcelConfigRequest';
 
@@ -90,7 +94,7 @@ async function run({input, api, farm, invalidateReason}: RunInput) {
       [...previousDevDepRequests.entries()]
         .filter(([id]) => api.canSkipSubrequest(id))
         .map(([, req]) => [
-          `${req.moduleSpecifier}:${req.resolveFrom}`,
+          `${req.moduleSpecifier}:${fromProjectPathRelative(req.resolveFrom)}`,
           req.hash,
         ]),
     ),

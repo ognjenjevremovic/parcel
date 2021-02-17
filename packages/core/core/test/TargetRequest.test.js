@@ -5,7 +5,7 @@ import path from 'path';
 import tempy from 'tempy';
 import {inputFS as fs} from '@parcel/test-utils';
 import {TargetResolver} from '../src/requests/TargetRequest';
-import {DEFAULT_OPTIONS as _DEFAULT_OPTIONS} from './test-utils';
+import {DEFAULT_OPTIONS as _DEFAULT_OPTIONS, relative} from './test-utils';
 
 const DEFAULT_OPTIONS = {
   ..._DEFAULT_OPTIONS,
@@ -115,7 +115,7 @@ describe('TargetResolver', () => {
         {
           name: 'customA',
           publicUrl: '/',
-          distDir: path.resolve('customA'),
+          distDir: path.relative(__dirname, path.resolve('customA')),
           env: {
             id: 'daa5d206066497852a3e8af4ff268cc2',
             context: 'browser',
@@ -134,7 +134,7 @@ describe('TargetResolver', () => {
           name: 'customB',
           publicUrl: '/',
           distEntry: 'b.js',
-          distDir: path.resolve('customB'),
+          distDir: path.relative(__dirname, path.resolve('customB')),
           env: {
             id: '34ed8a19cbe309827ce088ef05ec16c0',
             context: 'node',
@@ -161,7 +161,7 @@ describe('TargetResolver', () => {
       [
         {
           name: 'main',
-          distDir: path.join(__dirname, 'fixtures/common-targets/dist/main'),
+          distDir: './fixtures/common-targets/dist/main',
           distEntry: 'index.js',
           publicUrl: '/',
           env: {
@@ -178,6 +178,7 @@ describe('TargetResolver', () => {
             sourceMap: {},
           },
           loc: {
+            // TODO
             filePath: path.join(COMMON_TARGETS_FIXTURE_PATH, 'package.json'),
             start: {
               column: 11,
@@ -191,7 +192,7 @@ describe('TargetResolver', () => {
         },
         {
           name: 'module',
-          distDir: path.join(__dirname, 'fixtures/common-targets/dist/module'),
+          distDir: './fixtures/common-targets/dist/module',
           distEntry: 'index.js',
           publicUrl: '/',
           env: {
@@ -223,7 +224,7 @@ describe('TargetResolver', () => {
         },
         {
           name: 'browser',
-          distDir: path.join(__dirname, 'fixtures/common-targets/dist/browser'),
+          distDir: './fixtures/common-targets/dist/browser',
           distEntry: 'index.js',
           publicUrl: '/assets',
           env: {
@@ -263,7 +264,9 @@ describe('TargetResolver', () => {
       [
         {
           name: 'app',
-          distDir: path.join(COMMON_TARGETS_IGNORE_FIXTURE_PATH, 'dist'),
+          distDir: relative(
+            path.join(COMMON_TARGETS_IGNORE_FIXTURE_PATH, 'dist'),
+          ),
           distEntry: 'index.js',
           publicUrl: '/',
           env: {
@@ -305,7 +308,7 @@ describe('TargetResolver', () => {
       [
         {
           name: 'main',
-          distDir: path.join(__dirname, 'fixtures/custom-targets/dist/main'),
+          distDir: './fixtures/custom-targets/dist/main',
           distEntry: 'index.js',
           publicUrl: '/',
           env: {
@@ -335,10 +338,7 @@ describe('TargetResolver', () => {
         },
         {
           name: 'browserModern',
-          distDir: path.join(
-            __dirname,
-            'fixtures/custom-targets/dist/browserModern',
-          ),
+          distDir: './fixtures/custom-targets/dist/browserModern',
           distEntry: 'index.js',
           publicUrl: '/',
           env: {
@@ -368,10 +368,7 @@ describe('TargetResolver', () => {
         },
         {
           name: 'browserLegacy',
-          distDir: path.join(
-            __dirname,
-            'fixtures/custom-targets/dist/browserLegacy',
-          ),
+          distDir: './fixtures/custom-targets/dist/browserLegacy',
           distEntry: 'index.js',
           publicUrl: '/',
           env: {
@@ -410,7 +407,7 @@ describe('TargetResolver', () => {
       [
         {
           name: 'app',
-          distDir: path.join(__dirname, 'fixtures/custom-targets-distdir/www'),
+          distDir: './fixtures/custom-targets-distdir/www',
           distEntry: undefined,
           publicUrl: 'www',
           env: {
@@ -437,7 +434,7 @@ describe('TargetResolver', () => {
     assert.deepEqual(await targetResolver.resolve(CONTEXT_FIXTURE_PATH), [
       {
         name: 'main',
-        distDir: path.join(__dirname, 'fixtures/context/dist/main'),
+        distDir: './fixtures/context/dist/main',
         distEntry: 'index.js',
         publicUrl: '/',
         env: {
@@ -472,7 +469,7 @@ describe('TargetResolver', () => {
     assert.deepEqual(await targetResolver.resolve(fixture), [
       {
         name: 'main',
-        distDir: path.join(fixture, 'dist'),
+        distDir: relative(path.join(fixture, 'dist')),
         distEntry: 'index.html',
         publicUrl: '/',
         env: {
@@ -512,7 +509,7 @@ describe('TargetResolver', () => {
       [
         {
           name: 'main',
-          distDir: path.join(__dirname, 'fixtures/common-targets/dist/main'),
+          distDir: './fixtures/common-targets/dist/main',
           distEntry: 'index.js',
           publicUrl: '/',
           env: {
@@ -542,7 +539,7 @@ describe('TargetResolver', () => {
         },
         {
           name: 'browser',
-          distDir: path.join(__dirname, 'fixtures/common-targets/dist/browser'),
+          distDir: './fixtures/common-targets/dist/browser',
           distEntry: 'index.js',
           publicUrl: '/assets',
           env: {
@@ -587,7 +584,7 @@ describe('TargetResolver', () => {
       [
         {
           name: 'default',
-          distDir: serveDistDir,
+          distDir: './.parcel-cache/dist',
           publicUrl: '/',
           env: {
             id: 'c662827151e303ed37b66363ce56741b',
@@ -613,7 +610,9 @@ describe('TargetResolver', () => {
       [
         {
           name: 'default',
-          distDir: path.join(DEFAULT_DISTPATH_FIXTURE_PATHS.none, 'dist'),
+          distDir: relative(
+            path.join(DEFAULT_DISTPATH_FIXTURE_PATHS.none, 'dist'),
+          ),
           publicUrl: '/',
           env: {
             id: 'b3615ef0bf18b4028c140901ca54d959',
@@ -641,7 +640,9 @@ describe('TargetResolver', () => {
       [
         {
           name: 'browserModern',
-          distDir: path.join(DEFAULT_DISTPATH_FIXTURE_PATHS.one, 'dist'),
+          distDir: relative(
+            path.join(DEFAULT_DISTPATH_FIXTURE_PATHS.one, 'dist'),
+          ),
           distEntry: undefined,
           publicUrl: '/',
           env: {
@@ -671,10 +672,12 @@ describe('TargetResolver', () => {
       [
         {
           name: 'browserModern',
-          distDir: path.join(
-            DEFAULT_DISTPATH_FIXTURE_PATHS.two,
-            'dist',
-            'browserModern',
+          distDir: relative(
+            path.join(
+              DEFAULT_DISTPATH_FIXTURE_PATHS.two,
+              'dist',
+              'browserModern',
+            ),
           ),
           distEntry: undefined,
           publicUrl: '/',
@@ -695,10 +698,12 @@ describe('TargetResolver', () => {
         },
         {
           name: 'browserLegacy',
-          distDir: path.join(
-            DEFAULT_DISTPATH_FIXTURE_PATHS.two,
-            'dist',
-            'browserLegacy',
+          distDir: relative(
+            path.join(
+              DEFAULT_DISTPATH_FIXTURE_PATHS.two,
+              'dist',
+              'browserLegacy',
+            ),
           ),
           distEntry: undefined,
           publicUrl: '/',

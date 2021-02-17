@@ -12,7 +12,12 @@ import type {ConfigAndCachePath} from './ParcelConfigRequest';
 
 import ThrowableDiagnostic, {errorToDiagnostic} from '@parcel/diagnostic';
 import {PluginLogger} from '@parcel/logger';
-import {escapeMarkdown, relativePath} from '@parcel/utils';
+import {
+  escapeMarkdown,
+  fromProjectPath,
+  toProjectPath,
+  fromProjectPathRelative,
+} from '@parcel/utils';
 import nullthrows from 'nullthrows';
 import path from 'path';
 import URL from 'url';
@@ -24,6 +29,7 @@ import ParcelConfig from '../ParcelConfig';
 import createParcelConfigRequest, {
   getCachedParcelConfig,
 } from './ParcelConfigRequest';
+import {invalidateOnFileCreateToInternal} from '../utils';
 
 export type PathRequest = {|
   id: string,
@@ -65,19 +71,22 @@ async function run({input, api, options}: RunOpts) {
     options,
     config,
   });
-  let result = await resolverRunner.resolve(input.dependency);
+  let result: ?ResolverResult = await resolverRunner.resolve(input.dependency);
 
   if (result != null) {
     if (result.invalidateOnFileCreate) {
       for (let file of result.invalidateOnFileCreate) {
-        api.invalidateOnFileCreate(file);
+        api.invalidateOnFileCreate(
+          invalidateOnFileCreateToInternal(options.projectRoot, file),
+        );
       }
     }
 
     if (result.invalidateOnFileChange) {
       for (let filePath of result.invalidateOnFileChange) {
-        api.invalidateOnFileUpdate(filePath);
-        api.invalidateOnFileDelete(filePath);
+        let pp = toProjectPath(options.projectRoot, filePath);
+        api.invalidateOnFileUpdate(pp);
+        api.invalidateOnFileDelete(pp);
       }
     }
 
@@ -118,12 +127,12 @@ export class ResolverRunner {
     };
 
     if (dependency.loc && dependency.sourcePath != null) {
-      diagnostic.filePath = dependency.sourcePath;
+      diagnostic.filePath = fromProjectPath(
+        this.options.projectRoot,
+        dependency.sourcePath,
+      );
       diagnostic.codeFrame = {
-        code: await this.options.inputFS.readFile(
-          dependency.sourcePath,
-          'utf8',
-        ),
+        code: await this.options.inputFS.readFile(diagnostic.filePath, 'utf8'),
         codeHighlights: dependency.loc
           ? [{start: dependency.loc.start, end: dependency.loc.end}]
           : [],
@@ -134,7 +143,7 @@ export class ResolverRunner {
   }
 
   async resolve(dependency: Dependency): Promise<?ResolverResult> {
-    let dep = new PublicDependency(dependency);
+    let dep = new PublicDependency(dependency, this.options);
     report({
       type: 'buildProgress',
       phase: 'resolving',
@@ -198,6 +207,10 @@ export class ResolverRunner {
       query = querystring.parse(queryPart);
     }
 
+    // Entrypoints, convert ProjectPath in module specifier to absolute path
+    if (dep.resolveFrom == null) {
+      filePath = path.join(this.options.projectRoot, filePath);
+    }
     let diagnostics: Array<Diagnostic> = [];
     for (let resolver of resolvers) {
       try {
@@ -224,7 +237,10 @@ export class ResolverRunner {
             return {
               assetGroup: {
                 canDefer: result.canDefer,
-                filePath: result.filePath,
+                filePath: toProjectPath(
+                  this.options.projectRoot,
+                  result.filePath,
+                ),
                 query,
                 sideEffects: result.sideEffects,
                 code: result.code,
@@ -271,19 +287,18 @@ export class ResolverRunner {
     let resolveFrom = dependency.resolveFrom ?? dependency.sourcePath;
     let dir =
       resolveFrom != null
-        ? escapeMarkdown(relativePath(this.options.projectRoot, resolveFrom))
+        ? escapeMarkdown(fromProjectPathRelative(resolveFrom))
         : '';
+    let specifier = escapeMarkdown(dep.moduleSpecifier || '');
 
-    let specifier = escapeMarkdown(dependency.moduleSpecifier || '');
-
-    // $FlowFixMe because of the err.code assignment
-    let err = await this.getThrowableDiagnostic(
+    let err: ThrowableDiagnostic = await this.getThrowableDiagnostic(
       dependency,
       `Failed to resolve '${specifier}' ${dir ? `from '${dir}'` : ''}`,
     );
 
     // Merge diagnostics
     err.diagnostics.push(...diagnostics);
+    // $FlowFixMe[prop-missing]
     err.code = 'MODULE_NOT_FOUND';
 
     throw err;

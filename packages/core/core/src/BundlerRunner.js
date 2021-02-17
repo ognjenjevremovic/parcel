@@ -1,16 +1,12 @@
 // @flow strict-local
 
 import type {AbortSignal} from 'abortcontroller-polyfill/dist/cjs-ponyfill';
-import type {
-  Bundle as IBundle,
-  Namer,
-  FilePath,
-  ConfigOutput,
-} from '@parcel/types';
+import type {Bundle as IBundle, Namer, ConfigOutput} from '@parcel/types';
 import type WorkerFarm, {SharedReference} from '@parcel/workers';
 import type ParcelConfig from './ParcelConfig';
 import type RequestTracker from './RequestTracker';
 import type {Bundle as InternalBundle, ParcelOptions} from './types';
+import type {ProjectPath} from '@parcel/utils';
 
 import assert from 'assert';
 import path from 'path';
@@ -24,7 +20,12 @@ import MutableBundleGraph from './public/MutableBundleGraph';
 import {Bundle, NamedBundle} from './public/Bundle';
 import {report} from './ReporterRunner';
 import dumpGraphToGraphViz from './dumpGraphToGraphViz';
-import {normalizeSeparators, unique, md5FromOrderedObject} from '@parcel/utils';
+import {
+  normalizeSeparators,
+  unique,
+  md5FromOrderedObject,
+  joinProjectPath,
+} from '@parcel/utils';
 import PluginOptions from './public/PluginOptions';
 import applyRuntimes from './applyRuntimes';
 import {PARCEL_VERSION} from './constants';
@@ -214,7 +215,7 @@ export default class BundlerRunner {
       name: string,
       version: string,
       plugin: Namer,
-      resolveFrom: FilePath,
+      resolveFrom: ProjectPath,
       keyPath: string,
     |}>,
     internalBundle: InternalBundle,
@@ -244,7 +245,7 @@ export default class BundlerRunner {
           }
 
           let target = nullthrows(internalBundle.target);
-          internalBundle.filePath = path.join(
+          internalBundle.filePath = joinProjectPath(
             target.distDir,
             normalizeSeparators(name),
           );

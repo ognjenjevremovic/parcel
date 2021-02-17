@@ -1,17 +1,18 @@
 // @flow strict-local
 
 import type {AbortSignal} from 'abortcontroller-polyfill/dist/cjs-ponyfill';
-import type {
-  Async,
-  File,
-  FilePath,
-  FileCreateInvalidation,
-  Glob,
-  EnvMap,
-} from '@parcel/types';
-import type {Event, Options as WatcherOptions} from '@parcel/watcher';
+import type {Async, EnvMap} from '@parcel/types';
+import type {EventType, Options as WatcherOptions} from '@parcel/watcher';
 import type WorkerFarm from '@parcel/workers';
-import type {NodeId, ParcelOptions, RequestInvalidation} from './types';
+import type {
+  InternalFile,
+  InternalFileCreateInvalidation,
+  NodeId,
+  ParcelOptions,
+  RequestInvalidation,
+  InternalGlob,
+} from './types';
+import type {ProjectPath} from '@parcel/utils';
 
 import invariant from 'assert';
 import nullthrows from 'nullthrows';
@@ -21,6 +22,9 @@ import {
   isDirectoryInside,
   md5FromObject,
   md5FromString,
+  toProjectPath,
+  fromProjectPathRelative,
+  toProjectPathUnsafe,
 } from '@parcel/utils';
 import Graph, {type GraphOpts} from './Graph';
 import {assertSignalNotAborted, hashFromOption} from './utils';
@@ -47,8 +51,8 @@ type SerializedRequestGraph = {|
   unpredicatableNodeIds: Set<NodeId>,
 |};
 
-type FileNode = {|id: string, +type: 'file', value: File|};
-type GlobNode = {|id: string, +type: 'glob', value: Glob|};
+type FileNode = {|id: string, +type: 'file', value: InternalFile|};
+type GlobNode = {|id: string, +type: 'glob', value: InternalGlob|};
 type FileNameNode = {|
   id: string,
   +type: 'file_name',
@@ -105,9 +109,9 @@ type RequestGraphEdgeType =
   | 'dirname';
 
 export type RunAPI = {|
-  invalidateOnFileCreate: FileCreateInvalidation => void,
-  invalidateOnFileDelete: FilePath => void,
-  invalidateOnFileUpdate: FilePath => void,
+  invalidateOnFileCreate: InternalFileCreateInvalidation => void,
+  invalidateOnFileDelete: ProjectPath => void,
+  invalidateOnFileUpdate: ProjectPath => void,
   invalidateOnStartup: () => void,
   invalidateOnEnvChange: string => void,
   invalidateOnOptionChange: string => void,
@@ -134,32 +138,32 @@ export type StaticRunOpts<TResult> = {|
   invalidateReason: InvalidateReason,
 |};
 
-const nodeFromFilePath = (filePath: string) => ({
-  id: filePath,
+const nodeFromFilePath = (filePath: ProjectPath): RequestGraphNode => ({
+  id: fromProjectPathRelative(filePath),
   type: 'file',
   value: {filePath},
 });
 
-const nodeFromGlob = (glob: Glob) => ({
-  id: glob,
+const nodeFromGlob = (glob: InternalGlob): RequestGraphNode => ({
+  id: fromProjectPathRelative(glob),
   type: 'glob',
   value: glob,
 });
 
-const nodeFromFileName = (fileName: string) => ({
+const nodeFromFileName = (fileName: string): RequestGraphNode => ({
   id: 'file_name:' + fileName,
   type: 'file_name',
   value: fileName,
 });
 
-const nodeFromRequest = (request: StoredRequest) => ({
+const nodeFromRequest = (request: StoredRequest): RequestGraphNode => ({
   id: request.id,
   type: 'request',
   value: request,
   invalidateReason: INITIAL_BUILD,
 });
 
-const nodeFromEnv = (env: string, value: string | void) => ({
+const nodeFromEnv = (env: string, value: string | void): RequestGraphNode => ({
   id: 'env:' + env,
   type: 'env',
   value: {
@@ -168,7 +172,7 @@ const nodeFromEnv = (env: string, value: string | void) => ({
   },
 });
 
-const nodeFromOption = (option: string, value: mixed) => ({
+const nodeFromOption = (option: string, value: mixed): RequestGraphNode => ({
   id: 'option:' + option,
   type: 'option',
   value: {
@@ -331,7 +335,7 @@ export class RequestGraph extends Graph<
     }
   }
 
-  invalidateOnFileUpdate(requestId: string, filePath: FilePath) {
+  invalidateOnFileUpdate(requestId: string, filePath: ProjectPath) {
     let requestNode = this.getRequestNode(requestId);
     let fileNode = nodeFromFilePath(filePath);
     if (!this.hasNode(fileNode.id)) {
@@ -343,7 +347,7 @@ export class RequestGraph extends Graph<
     }
   }
 
-  invalidateOnFileDelete(requestId: string, filePath: FilePath) {
+  invalidateOnFileDelete(requestId: string, filePath: ProjectPath) {
     let requestNode = this.getRequestNode(requestId);
     let fileNode = nodeFromFilePath(filePath);
     if (!this.hasNode(fileNode.id)) {
@@ -355,7 +359,10 @@ export class RequestGraph extends Graph<
     }
   }
 
-  invalidateOnFileCreate(requestId: string, input: FileCreateInvalidation) {
+  invalidateOnFileCreate(
+    requestId: string,
+    input: InternalFileCreateInvalidation,
+  ) {
     let requestNode = this.getRequestNode(requestId);
     let node;
     if (input.glob != null) {
@@ -503,17 +510,20 @@ export class RequestGraph extends Graph<
 
   invalidateFileNameNode(
     node: FileNameNode,
-    filePath: FilePath,
+    filePath: ProjectPath,
     matchNodes: Array<FileNode>,
   ) {
     // If there is an edge between this file_name node and one of the original file nodes pointed to
     // by the original file_name node, and the matched node is inside the current directory, invalidate
     // all connected requests pointed to by the file node.
-    let dirname = path.dirname(filePath);
+    let dirname = path.dirname(fromProjectPathRelative(filePath));
     for (let matchNode of matchNodes) {
       if (
         this.hasEdge(node.id, matchNode.id, 'invalidated_by_create_above') &&
-        isDirectoryInside(path.dirname(matchNode.value.filePath), dirname)
+        isDirectoryInside(
+          path.dirname(fromProjectPathRelative(matchNode.value.filePath)),
+          dirname,
+        )
       ) {
         let connectedNodes = this.getNodesConnectedTo(
           matchNode,
@@ -531,12 +541,19 @@ export class RequestGraph extends Graph<
     let parent = this.getNode('file_name:' + basename);
     if (parent != null && this.hasEdge(node.id, parent.id, 'dirname')) {
       invariant(parent.type === 'file_name');
-      this.invalidateFileNameNode(parent, dirname, matchNodes);
+      this.invalidateFileNameNode(
+        parent,
+        toProjectPathUnsafe(dirname),
+        matchNodes,
+      );
     }
   }
 
-  respondToFSEvents(events: Array<Event>): boolean {
-    for (let {path: filePath, type} of events) {
+  respondToFSEvents(
+    events: Array<{|path: ProjectPath, type: EventType|}>,
+  ): boolean {
+    for (let {path: _filePath, type} of events) {
+      let filePath = fromProjectPathRelative(_filePath);
       let node = this.getNode(filePath);
 
       // sometimes mac os reports update events as create events.
@@ -568,7 +585,7 @@ export class RequestGraph extends Graph<
           });
 
           if (above.length > 0) {
-            this.invalidateFileNameNode(fileNameNode, filePath, above);
+            this.invalidateFileNameNode(fileNameNode, _filePath, above);
           }
         }
 
@@ -576,7 +593,7 @@ export class RequestGraph extends Graph<
           let globNode = this.getNode(id);
           invariant(globNode && globNode.type === 'glob');
 
-          if (isGlobMatch(filePath, globNode.value)) {
+          if (isGlobMatch(filePath, fromProjectPathRelative(globNode.value))) {
             let connectedNodes = this.getNodesConnectedTo(
               globNode,
               'invalidated_by_create',
@@ -695,7 +712,9 @@ export default class RequestTracker {
     }
   }
 
-  respondToFSEvents(events: Array<Event>): boolean {
+  respondToFSEvents(
+    events: Array<{|path: ProjectPath, type: EventType|}>,
+  ): boolean {
     return this.graph.respondToFSEvents(events);
   }
 
@@ -893,7 +912,12 @@ async function loadRequestGraph(options): Async<RequestGraph> {
     requestGraph.invalidateUnpredictableNodes();
     requestGraph.invalidateEnvNodes(options.env);
     requestGraph.invalidateOptionNodes(options);
-    requestGraph.respondToFSEvents(events);
+    requestGraph.respondToFSEvents(
+      events.map(e => ({
+        type: e.type,
+        path: toProjectPath(options.projectRoot, e.path),
+      })),
+    );
 
     return requestGraph;
   }

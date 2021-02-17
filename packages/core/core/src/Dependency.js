@@ -5,12 +5,12 @@ import type {
   ModuleSpecifier,
   Symbol,
 } from '@parcel/types';
-import {md5FromOrderedObject} from '@parcel/utils';
+import {type ProjectPath, md5FromOrderedObject} from '@parcel/utils';
 import type {Dependency, Environment, Target} from './types';
 
 type DependencyOpts = {|
   id?: string,
-  sourcePath?: string,
+  sourcePath?: ProjectPath,
   sourceAssetId?: string,
   moduleSpecifier: ModuleSpecifier,
   isAsync?: boolean,
@@ -21,7 +21,7 @@ type DependencyOpts = {|
   loc?: SourceLocation,
   env: Environment,
   meta?: Meta,
-  resolveFrom?: string,
+  resolveFrom?: ProjectPath,
   target?: Target,
   symbols?: Map<
     Symbol,
