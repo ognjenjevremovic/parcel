@@ -9,8 +9,6 @@
   dependencies:
     "@babel/highlight" "^7.10.4"
 
-<<<<<<< HEAD
-=======
 "@babel/code-frame@^7.12.13":
   version "7.12.13"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.12.13.tgz#dcfc826beef65e75c50e21d3837d7d95798dd658"
@@ -18,7 +16,6 @@
   dependencies:
     "@babel/highlight" "^7.12.13"
 
->>>>>>> origin/dev-dep-invalidation
 "@babel/compat-data@^7.12.5", "@babel/compat-data@^7.12.7":
   version "7.12.13"
   resolved "https://registry.yarnpkg.com/@babel/compat-data/-/compat-data-7.12.13.tgz#27e19e0ed3726ccf54067ced4109501765e7e2e8"
@@ -2092,20 +2089,9 @@
     universal-user-agent "^6.0.0"
 
 "@octokit/openapi-types@^2.3.0":
-<<<<<<< HEAD
-  version "2.3.1"
-  resolved "https://registry.yarnpkg.com/@octokit/openapi-types/-/openapi-types-2.3.1.tgz#4e06e97bfcce5ad64fe89a1b5bdbed05e31ed1ab"
-  integrity sha512-KTzpRDT07euvbBYbPs121YDqq5DT94nBDFIyogsDhOnWL8yDCHev6myeiPTgS+VLmyUbdNCYu6L/gVj+Bd1q8Q==
-
-"@octokit/openapi-types@^3.4.1":
-  version "3.5.0"
-  resolved "https://registry.yarnpkg.com/@octokit/openapi-types/-/openapi-types-3.5.0.tgz#ecd6f1a5b6421e24f06f8c5c02eb977c51397f09"
-  integrity sha512-LP15nQhxVblxoA9sKxSnrnJVIZEwTV9DZ16s01DtpttKWvg2lfg+zSWjveuO81c7CiX+HpBYPdUuzM2rvv1+Sw==
-=======
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/@octokit/openapi-types/-/openapi-types-2.3.0.tgz#075c4e5a1d05d0b62cd8048b71764537aa870c00"
   integrity sha512-Own8lHWVi5eEfLOnsIzAx16BoRbpkzac3QDUCxIqYMf4bjz+AGpv17UfRn1Va4lVmjwOpvZglpFI3mmxuQ+sIQ==
->>>>>>> origin/dev-dep-invalidation
 
 "@octokit/openapi-types@^4.0.0":
   version "4.0.0"
