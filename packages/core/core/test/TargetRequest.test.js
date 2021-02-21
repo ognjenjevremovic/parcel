@@ -115,7 +115,7 @@ describe('TargetResolver', () => {
         {
           name: 'customA',
           publicUrl: '/',
-          distDir: path.relative(__dirname, path.resolve('customA')),
+          distDir: relative(path.resolve('customA')),
           env: {
             id: 'daa5d206066497852a3e8af4ff268cc2',
             context: 'browser',
@@ -134,7 +134,7 @@ describe('TargetResolver', () => {
           name: 'customB',
           publicUrl: '/',
           distEntry: 'b.js',
-          distDir: path.relative(__dirname, path.resolve('customB')),
+          distDir: relative(path.resolve('customB')),
           env: {
             id: '34ed8a19cbe309827ce088ef05ec16c0',
             context: 'node',
