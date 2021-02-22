@@ -33,12 +33,12 @@ type SerializedParcelConfig = {|
   options: ParcelOptions,
 |};
 
-type LoadedPlugin<T> = {|
+export type LoadedPlugin<T> = {|
   name: string,
   version: Semver,
   plugin: T,
   resolveFrom: FilePath,
-  keyPath: string,
+  keyPath?: string,
 |};
 
 export default class ParcelConfig {
