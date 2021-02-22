@@ -178,7 +178,7 @@ describe('TargetResolver', () => {
             sourceMap: {},
           },
           loc: {
-            // TODO
+            // TODO?
             filePath: path.join(COMMON_TARGETS_FIXTURE_PATH, 'package.json'),
             start: {
               column: 11,

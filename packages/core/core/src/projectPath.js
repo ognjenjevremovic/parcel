@@ -16,6 +16,7 @@ export const toProjectPath: ((
   projectRoot: FilePath,
   p: FilePath,
 ) => ProjectPath) &
+  ((projectRoot: FilePath, p: FilePath | void) => ProjectPath | void) &
   // $FlowFixMe Not sure how to type properly
   ((projectRoot: FilePath, p: ?FilePath) => ?ProjectPath) = toProjectPath_;
 

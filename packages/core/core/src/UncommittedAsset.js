@@ -309,10 +309,7 @@ export default class UncommittedAsset {
     let {env, target, symbols, resolveFrom, ...rest} = opts;
     let dep = createDependency({
       ...rest,
-      // TODO change types?
-      ...(resolveFrom != null
-        ? {resolveFrom: toProjectPath(this.options.projectRoot, resolveFrom)}
-        : {...null}),
+      resolveFrom: toProjectPath(this.options.projectRoot, resolveFrom),
       // $FlowFixMe "convert" the $ReadOnlyMaps to the interal mutable one
       symbols,
       env: mergeEnvironments(this.value.env, env),

@@ -209,7 +209,7 @@ export type ParcelOptions = {|
   serveOptions: ServerOptions | false,
   shouldAutoInstall: boolean,
   logLevel: LogLevel,
-  projectRoot: string, // TODO
+  projectRoot: FilePath,
   shouldProfile: boolean,
   shouldPatchConsole: boolean,
   detailedReport?: ?DetailedReportOptions,
