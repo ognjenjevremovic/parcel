@@ -18,7 +18,6 @@ import type {
   ParcelOptions,
   InternalFileCreateInvalidation,
 } from './types';
-import type {ProjectPath} from '@parcel/utils';
 
 import v8 from 'v8';
 import invariant from 'assert';
@@ -27,13 +26,11 @@ import SourceMap from '@parcel/source-map';
 import {
   blobToStream,
   bufferStream,
-  fromProjectPath,
   loadSourceMap,
   md5FromString,
   SOURCEMAP_RE,
   streamFromPromise,
   TapStream,
-  toProjectPath,
 } from '@parcel/utils';
 import {createDependency, mergeDependencies} from './Dependency';
 import {mergeEnvironments} from './Environment';
@@ -45,6 +42,7 @@ import {
   getInvalidationHash,
 } from './assetUtils';
 import {invalidateOnFileCreateToInternal} from './utils';
+import {type ProjectPath, fromProjectPath, toProjectPath} from './projectPath';
 
 type UncommittedAssetOptions = {|
   value: Asset,

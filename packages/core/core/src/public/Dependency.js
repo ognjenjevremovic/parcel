@@ -9,11 +9,11 @@ import type {
 } from '@parcel/types';
 import type {Dependency as InternalDependency, ParcelOptions} from '../types';
 
+import nullthrows from 'nullthrows';
 import Environment from './Environment';
 import Target from './Target';
 import {MutableDependencySymbols} from './Symbols';
-import {fromProjectPath} from '@parcel/utils';
-import nullthrows from 'nullthrows';
+import {fromProjectPath} from '../projectPath';
 
 const inspect = Symbol.for('nodejs.util.inspect.custom');
 

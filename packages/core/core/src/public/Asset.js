@@ -32,7 +32,7 @@ import {AssetSymbols, MutableAssetSymbols} from './Symbols';
 import UncommittedAsset from '../UncommittedAsset';
 import CommittedAsset from '../CommittedAsset';
 import {createEnvironment} from '../Environment';
-import {toProjectPath, fromProjectPath} from '@parcel/utils';
+import {fromProjectPath, toProjectPath} from '../projectPath';
 
 const inspect = Symbol.for('nodejs.util.inspect.custom');
 

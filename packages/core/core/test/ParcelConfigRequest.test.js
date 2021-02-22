@@ -15,7 +15,7 @@ import {
 } from '../src/requests/ParcelConfigRequest';
 import {validatePackageName} from '../src/ParcelConfig.schema';
 import {DEFAULT_OPTIONS, relative} from './test-utils';
-import {toProjectPath} from '@parcel/utils';
+import {toProjectPath} from '../src/projectPath';
 
 describe('ParcelConfigRequest', () => {
   describe('validatePackageName', () => {

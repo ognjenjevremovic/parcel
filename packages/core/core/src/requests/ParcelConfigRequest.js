@@ -20,7 +20,6 @@ import {
   validateSchema,
   findAlternativeNodeModules,
   findAlternativeFiles,
-  toProjectPath,
 } from '@parcel/utils';
 import ThrowableDiagnostic, {
   generateJSONCodeHighlights,
@@ -28,6 +27,7 @@ import ThrowableDiagnostic, {
 import {parse} from 'json5';
 import path from 'path';
 import invariant from 'assert';
+import {toProjectPath} from '../projectPath';
 
 import ParcelConfigSchema from '../ParcelConfig.schema';
 import {optionsProxy} from '../utils';

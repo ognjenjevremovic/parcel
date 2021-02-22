@@ -21,11 +21,9 @@ import type {PathRequestInput} from './PathRequest';
 
 import invariant from 'assert';
 import {
-  type ProjectPath,
   escapeMarkdown,
   md5FromOrderedObject,
   PromiseQueue,
-  fromProjectPathRelative,
 } from '@parcel/utils';
 import ThrowableDiagnostic from '@parcel/diagnostic';
 import AssetGraph from '../AssetGraph';
@@ -34,6 +32,7 @@ import createEntryRequest from './EntryRequest';
 import createTargetRequest from './TargetRequest';
 import createAssetRequest from './AssetRequest';
 import createPathRequest from './PathRequest';
+import {type ProjectPath, fromProjectPathRelative} from '../projectPath';
 
 import dumpToGraphViz from '../dumpGraphToGraphViz';
 

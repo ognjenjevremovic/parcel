@@ -1,17 +1,14 @@
 // @flow strict-local
 
 import type {PackageName, ConfigResult} from '@parcel/types';
-import {
-  md5FromString,
-  type ProjectPath,
-  fromProjectPathRelative,
-} from '@parcel/utils';
+import {md5FromString} from '@parcel/utils';
 import type {
   Config,
   Environment,
   InternalFileCreateInvalidation,
   InternalDevDepOptions,
 } from './types';
+import {type ProjectPath, fromProjectPathRelative} from './projectPath';
 
 type ConfigOpts = {|
   plugin: PackageName,

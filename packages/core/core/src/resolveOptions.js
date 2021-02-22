@@ -6,10 +6,11 @@ import type {ParcelOptions} from './types';
 import {getRootDir} from '@parcel/utils';
 import loadDotEnv from './loadDotEnv';
 import path from 'path';
-import {resolveConfig, md5FromString, toProjectPath} from '@parcel/utils';
+import {resolveConfig, md5FromString} from '@parcel/utils';
 import {NodeFS} from '@parcel/fs';
 import Cache from '@parcel/cache';
 import {NodePackageManager} from '@parcel/package-manager';
+import {toProjectPath} from './projectPath';
 
 // Default cache directory name
 const DEFAULT_CACHE_DIRNAME = '.parcel-cache';

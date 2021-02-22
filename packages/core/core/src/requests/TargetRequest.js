@@ -24,8 +24,6 @@ import {
   resolveConfig,
   md5FromObject,
   validateSchema,
-  fromProjectPath,
-  toProjectPath,
 } from '@parcel/utils';
 import {createEnvironment} from '../Environment';
 import createParcelConfigRequest, {
@@ -44,6 +42,7 @@ import {
 } from '../TargetDescriptor.schema';
 import {BROWSER_ENVS} from '../public/Environment';
 import {optionsProxy} from '../utils';
+import {fromProjectPath, toProjectPath} from '../projectPath';
 
 type RunOpts = {|
   input: Entry,

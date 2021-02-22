@@ -10,14 +10,10 @@ import type {
 } from '@parcel/types';
 import type {Config, ParcelOptions} from '../types';
 
-import {
-  DefaultWeakMap,
-  fromProjectPath,
-  loadConfig,
-  toProjectPath,
-} from '@parcel/utils';
-import Environment from './Environment';
 import invariant from 'assert';
+import {DefaultWeakMap, loadConfig} from '@parcel/utils';
+import Environment from './Environment';
+import {fromProjectPath, toProjectPath} from '../projectPath';
 
 const internalConfigToConfig: DefaultWeakMap<
   ParcelOptions,

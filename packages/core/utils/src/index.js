@@ -50,16 +50,7 @@ export {
 } from './md5';
 export {fuzzySearch} from './schema';
 export {createHTTPServer} from './http-server';
-export {
-  fromProjectPath,
-  fromProjectPathRelative,
-  joinProjectPath,
-  normalizePath,
-  normalizeSeparators,
-  relativePath,
-  toProjectPath,
-  toProjectPathUnsafe,
-} from './path';
+export {normalizePath, normalizeSeparators, relativePath} from './path';
 export {
   replaceURLReferences,
   replaceInlineReferences,

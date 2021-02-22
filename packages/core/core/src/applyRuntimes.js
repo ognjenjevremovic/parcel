@@ -23,7 +23,7 @@ import {PluginLogger} from '@parcel/logger';
 import ThrowableDiagnostic, {errorToDiagnostic} from '@parcel/diagnostic';
 import {dependencyToInternalDependency} from './public/Dependency';
 import createAssetGraphRequest from './requests/AssetGraphRequest';
-import {fromProjectPath, toProjectPath} from '@parcel/utils';
+import {fromProjectPath, toProjectPath} from './projectPath';
 
 type RuntimeConnection = {|
   bundle: InternalBundle,

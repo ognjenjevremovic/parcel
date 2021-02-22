@@ -12,7 +12,6 @@ import type {
   RequestInvalidation,
   InternalGlob,
 } from './types';
-import type {ProjectPath} from '@parcel/utils';
 
 import invariant from 'assert';
 import nullthrows from 'nullthrows';
@@ -22,12 +21,16 @@ import {
   isDirectoryInside,
   md5FromObject,
   md5FromString,
-  toProjectPath,
-  fromProjectPathRelative,
-  toProjectPathUnsafe,
 } from '@parcel/utils';
 import Graph, {type GraphOpts} from './Graph';
 import {assertSignalNotAborted, hashFromOption} from './utils';
+import {
+  type ProjectPath,
+  fromProjectPathRelative,
+  toProjectPathUnsafe,
+  toProjectPath,
+} from './projectPath';
+
 import {
   PARCEL_VERSION,
   VALID,

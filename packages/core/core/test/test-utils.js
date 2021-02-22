@@ -6,9 +6,10 @@ import Cache, {createCacheDir} from '@parcel/cache';
 import tempy from 'tempy';
 import path from 'path';
 import {inputFS, outputFS} from '@parcel/test-utils';
-import {toProjectPath, relativePath} from '@parcel/utils';
+import {relativePath} from '@parcel/utils';
 import {NodePackageManager} from '@parcel/package-manager';
 import {createEnvironment} from '../src/Environment';
+import {toProjectPath} from '../src/projectPath';
 
 let cacheDir = tempy.directory();
 createCacheDir(outputFS, cacheDir);

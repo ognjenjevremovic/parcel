@@ -20,7 +20,7 @@ import type {
   ParcelOptions,
 } from './types';
 import {objectSortedEntries} from '@parcel/utils';
-import type {ConfigOutput, ProjectPath} from '@parcel/utils';
+import type {ConfigOutput} from '@parcel/utils';
 
 import {Readable} from 'stream';
 import crypto from 'crypto';
@@ -33,14 +33,17 @@ import {Asset as PublicAsset} from './public/Asset';
 import PluginOptions from './public/PluginOptions';
 import {
   blobToStream,
-  fromProjectPath,
-  fromProjectPathRelative,
   loadConfig,
   md5FromFilePath,
   md5FromOrderedObject,
 } from '@parcel/utils';
 import {hashFromOption} from './utils';
 import {createBuildCache} from './buildCache';
+import {
+  type ProjectPath,
+  fromProjectPath,
+  fromProjectPathRelative,
+} from './projectPath';
 
 type AssetOptions = {|
   id?: string,

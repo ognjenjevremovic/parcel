@@ -7,9 +7,9 @@ import type {
 } from '@parcel/types';
 import type {Target as TargetValue, ParcelOptions} from '../types';
 
-import {fromProjectPath} from '@parcel/utils';
-import Environment from './Environment';
 import nullthrows from 'nullthrows';
+import Environment from './Environment';
+import {fromProjectPath} from '../projectPath';
 
 const internalTargetToTarget: WeakMap<TargetValue, Target> = new WeakMap();
 const _targetToInternalTarget: WeakMap<ITarget, TargetValue> = new WeakMap();

@@ -22,14 +22,14 @@ import type {
   ParcelOptions,
 } from './types';
 
+import {makeRe} from 'micromatch';
+import {basename} from 'path';
+import loadPlugin from './loadParcelPlugin';
 import {
   type ProjectPath,
   fromProjectPath,
   fromProjectPathRelative,
-} from '@parcel/utils';
-import {makeRe} from 'micromatch';
-import {basename} from 'path';
-import loadPlugin from './loadParcelPlugin';
+} from './projectPath';
 
 type GlobMap<T> = {[Glob]: T, ...};
 type SerializedParcelConfig = {|

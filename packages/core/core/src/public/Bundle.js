@@ -17,13 +17,14 @@ import type BundleGraph from '../BundleGraph';
 
 import invariant from 'assert';
 import nullthrows from 'nullthrows';
-import {DefaultWeakMap, fromProjectPath} from '@parcel/utils';
+import {DefaultWeakMap} from '@parcel/utils';
 
 import {assetToAssetValue, assetFromValue} from './Asset';
 import {mapVisitor} from '../Graph';
 import Environment from './Environment';
 import Dependency, {dependencyToInternalDependency} from './Dependency';
 import Target from './Target';
+import {fromProjectPath} from '../projectPath';
 
 const internalBundleToBundle: DefaultWeakMap<
   ParcelOptions,

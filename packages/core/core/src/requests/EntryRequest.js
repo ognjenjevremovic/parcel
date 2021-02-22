@@ -3,18 +3,16 @@
 import type {Async, FilePath} from '@parcel/types';
 import type {StaticRunOpts} from '../RequestTracker';
 import type {Entry, ParcelOptions, InternalFile} from '../types';
-import type {ProjectPath} from '@parcel/utils';
 
-import {
-  isDirectoryInside,
-  isGlob,
-  glob,
-  toProjectPath,
-  fromProjectPath,
-  fromProjectPathRelative,
-} from '@parcel/utils';
+import {isDirectoryInside, isGlob, glob} from '@parcel/utils';
 import ThrowableDiagnostic from '@parcel/diagnostic';
 import path from 'path';
+import {
+  type ProjectPath,
+  fromProjectPath,
+  fromProjectPathRelative,
+  toProjectPath,
+} from '../projectPath';
 
 type RunOpts = {|
   input: ProjectPath,

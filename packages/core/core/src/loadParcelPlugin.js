@@ -2,6 +2,7 @@
 import type {FilePath, PackageName, Semver} from '@parcel/types';
 import type {ParcelOptions} from './types';
 
+import path from 'path';
 import semver from 'semver';
 import logger from '@parcel/logger';
 import {CONFIG} from '@parcel/plugin';
@@ -10,13 +11,11 @@ import ThrowableDiagnostic, {
   generateJSONCodeHighlights,
 } from '@parcel/diagnostic';
 import {
-  type ProjectPath,
   findAlternativeNodeModules,
   loadConfig,
   resolveConfig,
-  toProjectPath,
 } from '@parcel/utils';
-import path from 'path';
+import {type ProjectPath, toProjectPath} from './projectPath';
 import {version as PARCEL_VERSION} from '../package.json';
 
 const NODE_MODULES = `${path.sep}node_modules${path.sep}`;

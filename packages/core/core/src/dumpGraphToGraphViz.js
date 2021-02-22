@@ -1,13 +1,10 @@
 // @flow
 
-import type {Environment} from './types';
-
+import type {AssetGraphNode, BundleGraphNode, Environment} from './types';
 import type Graph from './Graph';
-import type {AssetGraphNode, BundleGraphNode} from './types';
-
-import {fromProjectPathRelative} from '@parcel/utils';
 
 import path from 'path';
+import {fromProjectPathRelative} from './projectPath';
 
 const COLORS = {
   root: 'gray',

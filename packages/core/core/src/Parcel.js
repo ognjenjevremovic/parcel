@@ -30,13 +30,14 @@ import {ValueEmitter} from '@parcel/events';
 import {registerCoreWithSerializer} from './utils';
 import {createCacheDir} from '@parcel/cache';
 import {AbortController} from 'abortcontroller-polyfill/dist/cjs-ponyfill';
-import {PromiseQueue, toProjectPath} from '@parcel/utils';
+import {PromiseQueue} from '@parcel/utils';
 import ParcelConfig from './ParcelConfig';
 import logger from '@parcel/logger';
 import RequestTracker, {getWatcherOptions} from './RequestTracker';
 import createAssetGraphRequest from './requests/AssetGraphRequest';
 import createValidationRequest from './requests/ValidationRequest';
 import {Disposable} from '@parcel/events';
+import {toProjectPath} from './projectPath';
 
 registerCoreWithSerializer();
 

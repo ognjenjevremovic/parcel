@@ -8,7 +8,7 @@ import logger from '@parcel/logger';
 import {inputFS} from '@parcel/test-utils';
 import {parseAndProcessConfig} from '../src/requests/ParcelConfigRequest';
 import {DEFAULT_OPTIONS} from './test-utils';
-import {toProjectPath} from '@parcel/utils';
+import {toProjectPath} from '../src/projectPath';
 
 const PARCELRC_PATH = toProjectPath('/', '/.parcelrc');
 

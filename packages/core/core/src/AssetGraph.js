@@ -19,15 +19,14 @@ import type {
 import invariant from 'assert';
 import crypto from 'crypto';
 import {
-  type ProjectPath,
   md5FromObject,
   md5FromOrderedObject,
   objectSortedEntries,
-  fromProjectPathRelative,
 } from '@parcel/utils';
 import nullthrows from 'nullthrows';
 import Graph, {type GraphOpts} from './Graph';
 import {createDependency} from './Dependency';
+import {type ProjectPath, fromProjectPathRelative} from './projectPath';
 
 type InitOpts = {|
   entries?: Array<ProjectPath>,

@@ -11,8 +11,8 @@ import AssetGraph, {
 } from '../src/AssetGraph';
 import {createDependency} from '../src/Dependency';
 import {createAsset} from '../src/assetUtils';
-import {toProjectPath as _toProjectPath} from '@parcel/utils';
 import {DEFAULT_ENV, DEFAULT_TARGETS} from './test-utils';
+import {toProjectPath as _toProjectPath} from '../src/projectPath';
 
 const stats = {size: 0, time: 0};
 

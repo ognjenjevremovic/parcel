@@ -6,11 +6,7 @@ import type {Validator, ValidateResult} from '@parcel/types';
 import type {Diagnostic} from '@parcel/diagnostic';
 
 import path from 'path';
-import {
-  fromProjectPath,
-  fromProjectPathRelative,
-  resolveConfig,
-} from '@parcel/utils';
+import {resolveConfig} from '@parcel/utils';
 import logger, {PluginLogger} from '@parcel/logger';
 import ThrowableDiagnostic, {errorToDiagnostic} from '@parcel/diagnostic';
 import ParcelConfig from './ParcelConfig';
@@ -19,6 +15,7 @@ import {createAsset} from './assetUtils';
 import {Asset} from './public/Asset';
 import PluginOptions from './public/PluginOptions';
 import summarizeRequest from './summarizeRequest';
+import {fromProjectPath, fromProjectPathRelative} from './projectPath';
 
 export type ValidationOpts = {|
   config: ParcelConfig,

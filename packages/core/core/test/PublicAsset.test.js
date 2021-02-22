@@ -6,7 +6,7 @@ import UncommittedAsset from '../src/UncommittedAsset';
 import {createAsset} from '../src/assetUtils';
 import {createEnvironment} from '../src/Environment';
 import {DEFAULT_OPTIONS} from './test-utils';
-import {toProjectPath} from '@parcel/utils';
+import {toProjectPath} from '../src/projectPath';
 
 describe('Public Asset', () => {
   let internalAsset;

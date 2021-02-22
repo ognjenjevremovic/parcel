@@ -5,8 +5,9 @@ import type {
   ModuleSpecifier,
   Symbol,
 } from '@parcel/types';
-import {type ProjectPath, md5FromOrderedObject} from '@parcel/utils';
+import {md5FromOrderedObject} from '@parcel/utils';
 import type {Dependency, Environment, Target} from './types';
+import {type ProjectPath} from './projectPath';
 
 type DependencyOpts = {|
   id?: string,

@@ -24,26 +24,20 @@ import type {
   InternalDevDepOptions,
 } from './types';
 import type {LoadedPlugin} from './ParcelConfig';
-import type {ProjectPath} from '@parcel/utils';
 
 import path from 'path';
 import nullthrows from 'nullthrows';
+import crypto from 'crypto';
+import v8 from 'v8';
 import {
   escapeMarkdown,
-  fromProjectPath,
-  fromProjectPathRelative,
   md5FromOrderedObject,
   objectSortedEntries,
-  toProjectPath,
-  toProjectPathUnsafe,
 } from '@parcel/utils';
 import logger, {PluginLogger} from '@parcel/logger';
 import {init as initSourcemaps} from '@parcel/source-map';
 import ThrowableDiagnostic, {errorToDiagnostic} from '@parcel/diagnostic';
 import {SOURCEMAP_EXTENSIONS} from '@parcel/utils';
-import crypto from 'crypto';
-import v8 from 'v8';
-
 import {createDependency} from './Dependency';
 import ParcelConfig from './ParcelConfig';
 // TODO: eventually call path request as sub requests
@@ -67,6 +61,13 @@ import {createBuildCache} from './buildCache';
 import {createConfig} from './InternalConfig';
 import PublicConfig from './public/Config';
 import {invalidateOnFileCreateToInternal} from './utils';
+import {
+  type ProjectPath,
+  fromProjectPath,
+  fromProjectPathRelative,
+  toProjectPathUnsafe,
+  toProjectPath,
+} from './projectPath';
 
 type GenerateFunc = (input: UncommittedAsset) => Promise<GenerateOutput>;
 

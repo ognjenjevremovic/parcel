@@ -13,7 +13,7 @@ import type {FileSystem} from '@parcel/fs';
 import type {PackageManager} from '@parcel/package-manager';
 import type {ParcelOptions} from '../types';
 
-import {fromProjectPath} from '@parcel/utils';
+import {fromProjectPath} from '../projectPath';
 
 let parcelOptionsToPluginOptions: WeakMap<
   ParcelOptions,

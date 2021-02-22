@@ -7,7 +7,7 @@ import BundleGraph from '../src/BundleGraph';
 import {createEnvironment} from '../src/Environment';
 import {DEFAULT_OPTIONS} from './test-utils';
 import Graph from '../src/Graph';
-import {toProjectPath} from '@parcel/utils';
+import {toProjectPath} from '../src/projectPath';
 
 describe('Public Bundle', () => {
   let internalBundle: InternalBundle;

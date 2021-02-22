@@ -8,10 +8,9 @@ import type {
 } from '@parcel/types';
 import type {ParcelOptions, InternalFileCreateInvalidation} from './types';
 
-import assert from 'assert';
 import invariant from 'assert';
 import baseX from 'base-x';
-import {md5FromObject, toProjectPath} from '@parcel/utils';
+import {md5FromObject} from '@parcel/utils';
 import {registerSerializableClass} from './serializer';
 import AssetGraph from './AssetGraph';
 import BundleGraph from './BundleGraph';
@@ -19,6 +18,7 @@ import Graph from './Graph';
 import ParcelConfig from './ParcelConfig';
 import {RequestGraph} from './RequestTracker';
 import Config from './public/Config';
+import {toProjectPath} from './projectPath';
 // flowlint-next-line untyped-import:off
 import packageJson from '../package.json';
 
@@ -70,7 +70,7 @@ export function getPublicId(
   id: string,
   alreadyExists: string => boolean,
 ): string {
-  assert(
+  invariant(
     id.match(/^[0-9a-f]{32}$/),
     `id ${id} must be a 32-character hexadecimal string`,
   );

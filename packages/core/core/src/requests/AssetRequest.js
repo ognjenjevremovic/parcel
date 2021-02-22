@@ -11,13 +11,10 @@ import type {
 import type {ConfigAndCachePath} from './ParcelConfigRequest';
 import type {TransformationResult} from '../Transformation';
 
-import {
-  md5FromOrderedObject,
-  objectSortedEntries,
-  fromProjectPathRelative,
-} from '@parcel/utils';
+import {md5FromOrderedObject, objectSortedEntries} from '@parcel/utils';
 import nullthrows from 'nullthrows';
 import createParcelConfigRequest from './ParcelConfigRequest';
+import {fromProjectPathRelative} from '../projectPath';
 
 type RunInput = {|
   input: AssetRequestInput,

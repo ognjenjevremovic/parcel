@@ -20,12 +20,9 @@ import type {FileSystem, FileOptions} from '@parcel/fs';
 import invariant from 'assert';
 import {
   blobToStream,
-  fromProjectPath,
-  fromProjectPathRelative,
   md5FromOrderedObject,
   md5FromString,
   TapStream,
-  toProjectPathUnsafe,
 } from '@parcel/utils';
 import {PluginLogger} from '@parcel/logger';
 import {init as initSourcemaps} from '@parcel/source-map';
@@ -42,6 +39,11 @@ import BundleGraph, {
 } from './public/BundleGraph';
 import PluginOptions from './public/PluginOptions';
 import {PARCEL_VERSION, HASH_REF_PREFIX, HASH_REF_REGEX} from './constants';
+import {
+  fromProjectPath,
+  fromProjectPathRelative,
+  toProjectPathUnsafe,
+} from './projectPath';
 
 type Opts = {|
   config: ParcelConfig,

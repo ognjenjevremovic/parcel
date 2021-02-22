@@ -12,12 +12,7 @@ import type {ConfigAndCachePath} from './ParcelConfigRequest';
 
 import ThrowableDiagnostic, {errorToDiagnostic} from '@parcel/diagnostic';
 import {PluginLogger} from '@parcel/logger';
-import {
-  escapeMarkdown,
-  fromProjectPath,
-  toProjectPath,
-  fromProjectPathRelative,
-} from '@parcel/utils';
+import {escapeMarkdown} from '@parcel/utils';
 import nullthrows from 'nullthrows';
 import path from 'path';
 import URL from 'url';
@@ -30,6 +25,11 @@ import createParcelConfigRequest, {
   getCachedParcelConfig,
 } from './ParcelConfigRequest';
 import {invalidateOnFileCreateToInternal} from '../utils';
+import {
+  fromProjectPath,
+  fromProjectPathRelative,
+  toProjectPath,
+} from '../projectPath';
 
 export type PathRequest = {|
   id: string,
