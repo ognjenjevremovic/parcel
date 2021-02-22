@@ -430,9 +430,8 @@ async function normalizeOptions(
     command.detailedReport = '10';
   }
 
-  let reporters = [];
-
-  repoterOuter: for (let name of (command.reporter: Array<string>)) {
+  let additionalReporters = [];
+  reporterOuter: for (let name of (command.reporter: Array<string>)) {
     let potentialNames = [
       name,
       `@parcel/reporter-${name}`,
@@ -441,8 +440,8 @@ async function normalizeOptions(
     for (let packageName of potentialNames) {
       try {
         await packageManager.resolveSync(packageName, packageManager.fs.cwd());
-        reporters.push(packageName);
-        continue repoterOuter;
+        additionalReporters.push(packageName);
+        continue reporterOuter;
       } catch (e) {
         // noop
       }
@@ -452,7 +451,6 @@ async function normalizeOptions(
         potentialNames.join(', '),
     );
   }
-  console.log(reporters);
 
   let mode = command.name() === 'build' ? 'production' : 'development';
   return {
@@ -475,7 +473,7 @@ async function normalizeOptions(
     env: {
       NODE_ENV: nodeEnv,
     },
-    reporters: reporters,
+    additionalReporters,
     defaultTargetOptions: {
       shouldOptimize:
         command.optimize != null ? command.optimize : mode === 'production',

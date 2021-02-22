@@ -286,7 +286,7 @@ export type InitialParcelOptions = {|
     +engines?: Engines,
   |},
 
-  +reporters?: Array<PackageName>,
+  +additionalReporters?: Array<PackageName>,
 
   // throwErrors
   // global?
